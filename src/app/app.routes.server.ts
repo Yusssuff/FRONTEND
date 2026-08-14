@@ -1,24 +1,41 @@
-import { RenderMode, ServerRoute } from '@angular/ssr';
+import { Routes } from '@angular/router';
 
-export const serverRoutes: ServerRoute[] = [
+import { Auth } from './auth/auth';
+import { Products } from './products/products';
 
-  // Login page can be prerendered
+import { authGuard } from './auth/auth.guard';
+
+
+export const routes: Routes = [
+
+  // =========================
+  // LOGIN / REGISTER
+  // =========================
+
   {
     path: '',
-    renderMode: RenderMode.Prerender
+    component: Auth
   },
 
-  // Products is protected and depends on browser localStorage.
-  // Render it on the client instead of prerendering it.
+
+  // =========================
+  // PRODUCTS
+  // =========================
+
   {
     path: 'products',
-    renderMode: RenderMode.Client
+    component: Products,
+    canActivate: [authGuard]
   },
 
-  // Other routes
+
+  // =========================
+  // UNKNOWN ROUTES
+  // =========================
+
   {
     path: '**',
-    renderMode: RenderMode.Client
+    redirectTo: ''
   }
 
 ];

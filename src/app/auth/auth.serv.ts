@@ -1,12 +1,14 @@
-import { Injectable, PLATFORM_ID, inject } from '@angular/core';
+import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
+
 
 export interface LoginRequest {
   name: string;
   password: string;
 }
+
 
 export interface RegisterRequest {
   name: string;
@@ -15,33 +17,54 @@ export interface RegisterRequest {
   password: string;
 }
 
+
 export interface LoginResponse {
   token: string;
   expiration: string;
 }
+
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
 
-  private readonly apiUrl = 'http://localhost:5113/api/Account';
+  private readonly apiUrl =
+    'http://localhost:5113/api/Account';
 
-  private readonly tokenKey = 'jwt_token';
+  private readonly tokenKey =
+    'jwt_token';
 
-  private readonly platformId = inject(PLATFORM_ID);
+  private readonly expirationKey =
+    'token_expiration';
 
-  private get isBrowser(): boolean {
-    return isPlatformBrowser(this.platformId);
-  }
 
   constructor(
-    private http: HttpClient
+    private http: HttpClient,
+
+    @Inject(PLATFORM_ID)
+    private platformId: Object
   ) {}
 
-  // LOGIN
 
-  login(credentials: LoginRequest): Observable<LoginResponse> {
+  // ============================
+  // CHECK BROWSER
+  // ============================
+
+  private isBrowser(): boolean {
+
+    return isPlatformBrowser(this.platformId);
+
+  }
+
+
+  // ============================
+  // LOGIN
+  // ============================
+
+  login(
+    credentials: LoginRequest
+  ): Observable<LoginResponse> {
 
     return this.http.post<LoginResponse>(
       this.apiUrl,
@@ -50,8 +73,14 @@ export class AuthService {
 
       tap(response => {
 
-        // localStorage is available only in the browser
-        if (this.isBrowser) {
+        /*
+         * Store the JWT only in the browser.
+         *
+         * IMPORTANT:
+         * No token is printed to the console.
+         */
+
+        if (this.isBrowser()) {
 
           localStorage.setItem(
             this.tokenKey,
@@ -59,64 +88,86 @@ export class AuthService {
           );
 
           localStorage.setItem(
-            'token_expiration',
+            this.expirationKey,
             response.expiration
           );
+
         }
 
       })
 
     );
+
   }
 
-  // REGISTER
 
-  register(user: RegisterRequest): Observable<any> {
+  // ============================
+  // REGISTER
+  // ============================
+
+  register(
+    user: RegisterRequest
+  ): Observable<string> {
 
     return this.http.post(
       `${this.apiUrl}/Register`,
-      user
+      user,
+      {
+        responseType: 'text'
+      }
     );
 
   }
 
-  // GET TOKEN
 
+  // ============================
+  // GET TOKEN
+  // ============================
 
   getToken(): string | null {
 
-    // SSR/server has no localStorage
-    if (!this.isBrowser) {
+    /*
+     * SSR / Node does not have localStorage.
+     *
+     * Return null when running on the server.
+     */
+
+    if (!this.isBrowser()) {
+
       return null;
+
     }
 
-    return localStorage.getItem(this.tokenKey);
+    return localStorage.getItem(
+      this.tokenKey
+    );
+
   }
 
+
+  // ============================
   // CHECK LOGIN
+  // ============================
 
   isLoggedIn(): boolean {
 
     const token = this.getToken();
 
-    if (!token) {
-      return false;
-    }
+    return !!token;
 
-    return true;
   }
 
+
+  // ============================
   // LOGOUT
+  // ============================
 
-  logout(): void {
+logout(): void {
 
-    if (!this.isBrowser) {
-      return;
-    }
-
-    localStorage.removeItem(this.tokenKey);
-    localStorage.removeItem('token_expiration');
-
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem('token');
+    localStorage.removeItem('expiration');
   }
 
+}
 }

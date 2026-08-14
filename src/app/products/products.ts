@@ -1,74 +1,450 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import {
+  Component,
+  OnInit
+} from '@angular/core';
 
-import { ProductService } from './product.servie';
-import { Product } from './products.model';
+import {
+  CommonModule
+} from '@angular/common';
+
+import {
+  FormsModule
+} from '@angular/forms';
+
+import {
+  Router
+} from '@angular/router';
+
+import {
+  ProductService
+} from './product.servie';
+
+import {
+  Product
+} from './products.model';
+
+import {
+  AuthService
+} from '../auth/auth.serv';
+
 
 @Component({
   selector: 'app-products',
+
   standalone: true,
+
   imports: [
     CommonModule,
     FormsModule
   ],
+
   templateUrl: './products.html'
 })
 export class Products implements OnInit {
 
+  // =========================================================
+  // PRODUCTS
+  // =========================================================
+
   products: Product[] = [];
 
-  searchTerm: string = '';
+  searchTerm = '';
 
-  loading: boolean = false;
+  loading = false;
 
-  errorMessage: string = '';
+  errorMessage = '';
+
+
+  // =========================================================
+  // MODAL
+  // =========================================================
+
+  showProductModal = false;
+
+  editingProduct = false;
+
+  savingProduct = false;
+
+  deletingProductId: number | null = null;
+
+
+  // =========================================================
+  // FORM
+  // =========================================================
+
+  productForm: Product = {
+    id: 0,
+    name: '',
+    price: 0
+  };
+
 
   constructor(
-    private productService: ProductService
+    private productService: ProductService,
+    private authService: AuthService,
+    private router: Router
   ) {}
 
+
+  // =========================================================
+  // INIT
+  // =========================================================
+
   ngOnInit(): void {
+
     this.loadProducts();
+
   }
+
+
+  // =========================================================
+  // LOAD PRODUCTS
+  // =========================================================
 
   loadProducts(): void {
 
     this.loading = true;
+
     this.errorMessage = '';
 
-    this.productService.getProducts().subscribe({
+    this.productService
+      .getProducts(this.searchTerm)
+      .subscribe({
 
-      next: (data: Product[]) => {
+        next: (products: Product[]) => {
 
-        this.products = data;
+          this.products = products;
 
-        this.loading = false;
-      },
+          this.loading = false;
 
-      error: (error) => {
+        },
 
-        this.loading = false;
+        error: () => {
 
-        this.errorMessage =
-          'Unable to load products. Please make sure the backend server is running.';
-      }
+          this.loading = false;
 
-    });
+          this.products = [];
+
+          this.errorMessage =
+            'Unable to load products. Please make sure the backend server is running.';
+
+        }
+
+      });
+
   }
+
+
+  // =========================================================
+  // SEARCH
+  // =========================================================
+
+  searchProducts(): void {
+
+    this.loadProducts();
+
+  }
+
+
+  // =========================================================
+  // CLEAR SEARCH
+  // =========================================================
+
+  clearSearch(): void {
+
+    this.searchTerm = '';
+
+    this.loadProducts();
+
+  }
+
+
+  // =========================================================
+  // OPEN CREATE MODAL
+  // =========================================================
+
+  openCreateModal(): void {
+
+    this.editingProduct = false;
+
+    this.productForm = {
+      id: 0,
+      name: '',
+      price: 0
+    };
+
+    this.errorMessage = '';
+
+    this.showProductModal = true;
+
+  }
+
+
+  // =========================================================
+  // OPEN EDIT MODAL
+  // =========================================================
+
+  openEditModal(product: Product): void {
+
+    this.editingProduct = true;
+
+    this.productForm = {
+      id: product.id,
+      name: product.name,
+      price: product.price
+    };
+
+    this.errorMessage = '';
+
+    this.showProductModal = true;
+
+  }
+
+
+  // =========================================================
+  // CLOSE MODAL
+  // =========================================================
+
+  closeProductModal(): void {
+
+    if (this.savingProduct) {
+      return;
+    }
+
+    this.showProductModal = false;
+
+    this.errorMessage = '';
+
+  }
+
+
+  // =========================================================
+  // SAVE PRODUCT
+  // CREATE OR UPDATE
+  // =========================================================
+
+  saveProduct(): void {
+
+    this.errorMessage = '';
+
+    const name = this.productForm.name.trim();
+
+    const price = Number(this.productForm.price);
+
+
+    if (!name) {
+
+      this.errorMessage =
+        'Product name is required.';
+
+      return;
+    }
+
+
+    if (!Number.isFinite(price) || price < 0) {
+
+      this.errorMessage =
+        'Please enter a valid price.';
+
+      return;
+    }
+
+
+    this.savingProduct = true;
+
+
+    // =======================================================
+    // UPDATE
+    // =======================================================
+
+    if (this.editingProduct) {
+
+      const productToUpdate: Product = {
+
+        id: this.productForm.id,
+
+        name: name,
+
+        price: price
+
+      };
+
+
+      this.productService
+        .updateProduct(productToUpdate)
+        .subscribe({
+
+          next: (updatedProduct: Product) => {
+
+            const index =
+              this.products.findIndex(
+                product =>
+                  product.id === updatedProduct.id
+              );
+
+
+            if (index !== -1) {
+
+              this.products[index] =
+                updatedProduct;
+
+            }
+
+
+            this.savingProduct = false;
+
+            this.showProductModal = false;
+
+          },
+
+          error: () => {
+
+            this.savingProduct = false;
+
+            this.errorMessage =
+              'Unable to update the product.';
+
+          }
+
+        });
+
+      return;
+    }
+
+
+    // =======================================================
+    // CREATE
+    // =======================================================
+
+    const newProduct: Omit<Product, 'id'> = {
+
+      name: name,
+
+      price: price
+
+    };
+
+
+    this.productService
+      .createProduct(newProduct)
+      .subscribe({
+
+        next: (createdProduct: Product) => {
+
+          this.products = [
+            ...this.products,
+            createdProduct
+          ];
+
+          this.savingProduct = false;
+
+          this.showProductModal = false;
+
+        },
+
+        error: () => {
+
+          this.savingProduct = false;
+
+          this.errorMessage =
+            'Unable to create the product.';
+
+        }
+
+      });
+
+  }
+
+
+  // =========================================================
+  // DELETE PRODUCT
+  // =========================================================
+
+  deleteProduct(product: Product): void {
+
+    const confirmed =
+      window.confirm(
+        `Are you sure you want to delete "${product.name}"?`
+      );
+
+
+    if (!confirmed) {
+      return;
+    }
+
+
+    this.deletingProductId = product.id;
+
+
+    this.productService
+      .deleteProduct(product.id)
+      .subscribe({
+
+        next: () => {
+
+          this.products =
+            this.products.filter(
+              item =>
+                item.id !== product.id
+            );
+
+          this.deletingProductId = null;
+
+        },
+
+        error: () => {
+
+          this.deletingProductId = null;
+
+          this.errorMessage =
+            'Unable to delete the product.';
+
+        }
+
+      });
+
+  }
+
+
+  // =========================================================
+  // LOGOUT
+  // =========================================================
+
+  logout(): void {
+
+    this.authService.logout();
+
+    this.router.navigate(['/']);
+
+  }
+
+
+  // =========================================================
+  // FILTERED PRODUCTS
+  // =========================================================
 
   get filteredProducts(): Product[] {
 
     if (!this.searchTerm.trim()) {
+
       return this.products;
+
     }
 
-    const search = this.searchTerm
-      .toLowerCase()
-      .trim();
 
-    return this.products.filter(product =>
-      product.name.toLowerCase().includes(search)
+    const search =
+      this.searchTerm
+        .toLowerCase()
+        .trim();
+
+
+    return this.products.filter(
+      product =>
+        product.name
+          .toLowerCase()
+          .includes(search)
     );
+
   }
-} 
+
+}

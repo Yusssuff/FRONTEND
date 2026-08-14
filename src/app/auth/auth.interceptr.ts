@@ -1,44 +1,34 @@
-import {
-  HttpInterceptorFn
-} from '@angular/common/http';
-
+import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 
 import { AuthService } from './auth.serv';
 
 
-export const authInterceptor: HttpInterceptorFn =
-  (req, next) => {
+export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
-    const authService =
-      inject(AuthService);
+  const authService = inject(AuthService);
 
-    const token =
-      authService.getToken();
+  const token = authService.getToken();
 
 
-    // No token → send request normally
-    if (!token) {
+  if (!token) {
 
-      return next(req);
+    return next(req);
+
+  }
+
+
+  const authRequest = req.clone({
+
+    setHeaders: {
+
+      Authorization: `Bearer ${token}`
 
     }
 
-
-    // Add JWT token
-    const authRequest =
-      req.clone({
-
-        setHeaders: {
-
-          Authorization:
-            `Bearer ${token}`
-
-        }
-
-      });
+  });
 
 
-    return next(authRequest);
+  return next(authRequest);
 
-  };
+};

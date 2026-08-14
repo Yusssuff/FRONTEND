@@ -1,85 +1,153 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import {
+  Component,
+  Inject,
+  PLATFORM_ID,
+  OnInit
+} from '@angular/core';
+
+import {
+  CommonModule,
+  isPlatformBrowser
+} from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 
-import {
-  AuthService,
-  LoginRequest,
-  RegisterRequest
-} from './auth.serv';
+import { AuthService } from './auth.serv';
+
 
 @Component({
   selector: 'app-auth',
   standalone: true,
+
   imports: [
     CommonModule,
     FormsModule
   ],
+
   templateUrl: './auth.html',
   styleUrl: './auth.css'
 })
-export class Auth {
-
-  // ============================
-  // MODAL STATE
-  // ============================
-
-  showRegister = false;
+export class Auth implements OnInit {
 
   // ============================
   // LOGIN
   // ============================
 
-  loginName = '';
-  loginPassword = '';
+  name: string = '';
+  password: string = '';
 
-  loginLoading = false;
-  loginError = '';
 
   // ============================
   // REGISTER
   // ============================
 
-  registerName = '';
-  registerEmail = '';
-  registerPhone = '';
-  registerPassword = '';
+  registerName: string = '';
+  registerEmail: string = '';
+  registerPhone: string = '';
+  registerPassword: string = '';
 
-  registerLoading = false;
-  registerError = '';
-  registerSuccess = '';
+
+  // ============================
+  // UI STATE
+  // ============================
+
+  isRegisterMode: boolean = false;
+
+  loading: boolean = false;
+
+  errorMessage: string = '';
+
+  successMessage: string = '';
+
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+
+    @Inject(PLATFORM_ID)
+    private platformId: Object
   ) {}
 
+
   // ============================
-  // OPEN REGISTER
+  // COMPONENT INITIALIZATION
+  // ============================
+
+  ngOnInit(): void {
+
+    /*
+     * Only check localStorage in the browser.
+     *
+     * This is important because your Angular application
+     * uses SSR and localStorage does not exist on the server.
+     */
+
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+
+    /*
+     * If the user is already authenticated,
+     * don't keep them on the login page.
+     *
+     * replaceUrl prevents the login page from remaining
+     * as a history entry created by this redirect.
+     */
+
+    if (this.authService.isLoggedIn()) {
+
+      this.router.navigate(['/products'], {
+        replaceUrl: true
+      });
+
+    }
+
+  }
+
+
+  // ============================
+  // SWITCH TO REGISTER
   // ============================
 
   openRegister(): void {
 
-    this.showRegister = true;
+    this.isRegisterMode = true;
 
-    this.loginError = '';
-    this.registerError = '';
-    this.registerSuccess = '';
+    this.errorMessage = '';
+    this.successMessage = '';
+
   }
 
+
   // ============================
-  // BACK TO LOGIN
+  // SWITCH TO LOGIN
   // ============================
 
   openLogin(): void {
 
-    this.showRegister = false;
+    this.isRegisterMode = false;
 
-    this.loginError = '';
-    this.registerError = '';
-    this.registerSuccess = '';
+    this.errorMessage = '';
+    this.successMessage = '';
+
   }
+
+
+  // ============================
+  // CLOSE REGISTER
+  // ============================
+
+  closeRegister(): void {
+
+    this.isRegisterMode = false;
+
+    this.errorMessage = '';
+    this.successMessage = '';
+
+  }
+
 
   // ============================
   // LOGIN
@@ -87,58 +155,94 @@ export class Auth {
 
   login(): void {
 
-    this.loginError = '';
+    this.errorMessage = '';
+    this.successMessage = '';
 
-    if (!this.loginName.trim() || !this.loginPassword) {
 
-      this.loginError =
+    // ============================
+    // VALIDATION
+    // ============================
+
+    if (!this.name.trim() || !this.password) {
+
+      this.errorMessage =
         'Please enter your username and password.';
 
       return;
     }
 
-    this.loginLoading = true;
 
-    const credentials: LoginRequest = {
-      name: this.loginName.trim(),
-      password: this.loginPassword
-    };
+    this.loading = true;
 
-    this.authService.login(credentials).subscribe({
+
+    // ============================
+    // LOGIN REQUEST
+    // ============================
+
+    this.authService.login({
+
+      name: this.name.trim(),
+
+      password: this.password
+
+    }).subscribe({
 
       next: () => {
 
-        this.loginLoading = false;
+        this.loading = false;
 
-        // Do NOT print credentials or token
-        this.router.navigate(['/products']);
+
+        /*
+         * Login succeeded.
+         *
+         * AuthService stores the JWT.
+         *
+         * We intentionally do NOT print:
+         * - username
+         * - password
+         * - JWT
+         * - login response
+         */
+
+        this.router.navigate(['/products'], {
+          replaceUrl: true
+        });
 
       },
 
+
       error: (error) => {
 
-        this.loginLoading = false;
+        this.loading = false;
+
 
         if (error.status === 401) {
 
-          this.loginError =
+          this.errorMessage =
             'Invalid username or password.';
 
-        } else if (error.status === 400) {
+        }
 
-          this.loginError =
+        else if (error.status === 400) {
+
+          this.errorMessage =
             'Invalid login information.';
 
-        } else {
+        }
 
-          this.loginError =
-            'Unable to connect to the server. Please try again.';
+        else {
+
+          this.errorMessage =
+            'Unable to login. Please make sure the backend server is running.';
+
         }
 
       }
 
     });
+
   }
+
 
   // ============================
   // REGISTER
@@ -146,8 +250,13 @@ export class Auth {
 
   register(): void {
 
-    this.registerError = '';
-    this.registerSuccess = '';
+    this.errorMessage = '';
+    this.successMessage = '';
+
+
+    // ============================
+    // BASIC VALIDATION
+    // ============================
 
     if (
       !this.registerName.trim() ||
@@ -156,107 +265,196 @@ export class Auth {
       !this.registerPassword
     ) {
 
-      this.registerError =
+      this.errorMessage =
         'Please fill in all fields.';
 
       return;
     }
 
+
     if (this.registerPassword.length < 6) {
 
-      this.registerError =
-        'Password must contain at least 6 characters.';
+      this.errorMessage =
+        'Password must be at least 6 characters.';
 
       return;
     }
 
-    this.registerLoading = true;
 
-    const user: RegisterRequest = {
+    this.loading = true;
 
-      name: this.registerName.trim(),
+
+    /*
+     * Keep credentials only in memory for the
+     * registration → automatic login flow.
+     *
+     * They are NEVER printed to the console.
+     */
+
+    const username = this.registerName.trim();
+
+    const password = this.registerPassword;
+
+
+    // ============================
+    // STEP 1: REGISTER
+    // ============================
+
+    this.authService.register({
+
+      name: username,
 
       email: this.registerEmail.trim(),
 
       phone: this.registerPhone.trim(),
 
-      password: this.registerPassword
+      password: password
 
-    };
-
-    this.authService.register(user).subscribe({
+    }).subscribe({
 
       next: () => {
 
-        this.registerLoading = false;
+        /*
+         * Registration succeeded.
+         *
+         * Your backend registration endpoint
+         * doesn't return a JWT.
+         *
+         * Therefore we login automatically.
+         */
 
-        this.registerSuccess =
-          'Account created successfully. You can now login.';
 
-        // Clear registration form
-        this.registerName = '';
-        this.registerEmail = '';
-        this.registerPhone = '';
-        this.registerPassword = '';
+        // ============================
+        // STEP 2: AUTOMATIC LOGIN
+        // ============================
+
+        this.authService.login({
+
+          name: username,
+
+          password: password
+
+        }).subscribe({
+
+          next: () => {
+
+            this.loading = false;
+
+
+            /*
+             * Registration + login succeeded.
+             *
+             * AuthService has stored the JWT.
+             *
+             * replaceUrl prevents the login/register
+             * page from becoming a normal history entry.
+             */
+
+            this.router.navigate(['/products'], {
+              replaceUrl: true
+            });
+
+          },
+
+
+          error: () => {
+
+            this.loading = false;
+
+
+            /*
+             * Account was created,
+             * but automatic login failed.
+             */
+
+            this.errorMessage =
+              'Account created successfully, but automatic login failed. Please login manually.';
+
+            this.isRegisterMode = false;
+
+          }
+
+        });
 
       },
 
+
+      // ============================
+      // REGISTRATION ERROR
+      // ============================
+
       error: (error) => {
 
-        this.registerLoading = false;
+        this.loading = false;
+
 
         if (error.status === 400) {
 
-          this.registerError =
-            this.getRegisterError(error);
+          /*
+           * ASP.NET Identity commonly returns
+           * validation errors using HTTP 400.
+           */
 
-        } else {
+          if (error.error?.errors) {
 
-          this.registerError =
-            'Unable to create your account. Please try again.';
+            const errors = error.error.errors;
+
+            const messages: string[] = [];
+
+
+            Object.keys(errors).forEach(key => {
+
+              const fieldErrors = errors[key];
+
+              if (Array.isArray(fieldErrors)) {
+
+                messages.push(...fieldErrors);
+
+              }
+
+            });
+
+
+            this.errorMessage =
+              messages.length > 0
+                ? messages.join(' ')
+                : 'Registration information is invalid.';
+
+          }
+
+          else if (typeof error.error === 'string') {
+
+            this.errorMessage = error.error;
+
+          }
+
+          else {
+
+            this.errorMessage =
+              'Registration failed. Please check your information.';
+
+          }
+
+        }
+
+        else if (error.status === 409) {
+
+          this.errorMessage =
+            'This username or email is already registered.';
+
+        }
+
+        else {
+
+          this.errorMessage =
+            'Unable to register. Please make sure the backend server is running.';
+
         }
 
       }
 
     });
-  }
 
-  // ============================
-  // HANDLE BACKEND REGISTER ERRORS
-  // ============================
-
-  private getRegisterError(error: any): string {
-
-    if (error?.error?.errors) {
-
-      const errors = error.error.errors;
-
-      const messages: string[] = [];
-
-      for (const key of Object.keys(errors)) {
-
-        const value = errors[key];
-
-        if (Array.isArray(value)) {
-
-          messages.push(...value);
-
-        }
-
-      }
-
-      if (messages.length > 0) {
-
-        return messages.join(' ');
-      }
-    }
-
-    if (typeof error?.error === 'string') {
-
-      return error.error;
-    }
-
-    return 'Registration failed. Please check your information.';
   }
 
 }
