@@ -1,0 +1,462 @@
+<div
+  class="min-h-screen bg-slate-950 flex items-center justify-center p-6"
+>
+
+  <!-- ========================= -->
+  <!-- LOGIN CARD -->
+  <!-- ========================= -->
+
+  <div
+    class="w-full max-w-md rounded-3xl bg-white p-8 shadow-2xl"
+  >
+
+    <!-- Header -->
+
+    <div class="mb-8 text-center">
+
+      <div
+        class="mx-auto mb-4 flex h-14 w-14 items-center justify-center
+               rounded-2xl bg-indigo-600 text-2xl text-white shadow-lg"
+      >
+        🔐
+      </div>
+
+      <h1 class="text-3xl font-bold text-slate-900">
+        Welcome Back
+      </h1>
+
+      <p class="mt-2 text-slate-500">
+        Login to your account
+      </p>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- LOGIN ERROR -->
+    <!-- ========================= -->
+
+    <div
+      *ngIf="loginError"
+      class="mb-5 rounded-xl border border-red-200
+             bg-red-50 px-4 py-3 text-sm text-red-700"
+    >
+
+      {{ loginError }}
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- LOGIN FORM -->
+    <!-- ========================= -->
+
+    <form
+      class="space-y-5"
+      (ngSubmit)="login()"
+    >
+
+      <!-- Username -->
+
+      <div>
+
+        <label
+          for="loginUsername"
+          class="mb-2 block text-sm font-semibold text-slate-700"
+        >
+          Username
+        </label>
+
+        <input
+          id="loginUsername"
+          name="loginUsername"
+          type="text"
+          [(ngModel)]="loginName"
+          placeholder="Enter your username"
+          autocomplete="username"
+          required
+          class="w-full rounded-xl border border-slate-300
+                 bg-white px-4 py-3 text-slate-900
+                 outline-none transition
+                 placeholder:text-slate-400
+                 focus:border-indigo-500
+                 focus:ring-4 focus:ring-indigo-100"
+        />
+
+      </div>
+
+
+      <!-- Password -->
+
+      <div>
+
+        <label
+          for="loginPassword"
+          class="mb-2 block text-sm font-semibold text-slate-700"
+        >
+          Password
+        </label>
+
+        <input
+          id="loginPassword"
+          name="loginPassword"
+          type="password"
+          [(ngModel)]="loginPassword"
+          placeholder="Enter your password"
+          autocomplete="current-password"
+          required
+          class="w-full rounded-xl border border-slate-300
+                 bg-white px-4 py-3 text-slate-900
+                 outline-none transition
+                 placeholder:text-slate-400
+                 focus:border-indigo-500
+                 focus:ring-4 focus:ring-indigo-100"
+        />
+
+      </div>
+
+
+      <!-- Login Button -->
+
+      <button
+        type="submit"
+        [disabled]="loginLoading"
+        class="w-full rounded-xl bg-indigo-600 py-3.5
+               font-semibold text-white shadow-lg
+               transition duration-200
+               hover:bg-indigo-700 hover:shadow-xl
+               disabled:cursor-not-allowed
+               disabled:opacity-60"
+      >
+
+        <span *ngIf="!loginLoading">
+          Login
+        </span>
+
+        <span
+          *ngIf="loginLoading"
+          class="flex items-center justify-center gap-2"
+        >
+
+          <span
+            class="h-5 w-5 animate-spin rounded-full
+                   border-2 border-white border-t-transparent"
+          ></span>
+
+          Logging in...
+
+        </span>
+
+      </button>
+
+    </form>
+
+
+    <!-- ========================= -->
+    <!-- REGISTER LINK -->
+    <!-- ========================= -->
+
+    <div class="mt-8 border-t border-slate-200 pt-6 text-center">
+
+      <p class="text-sm text-slate-500">
+        Don't have an account?
+      </p>
+
+      <button
+        type="button"
+        (click)="openRegister()"
+        class="mt-2 font-semibold text-indigo-600
+               transition hover:text-indigo-800"
+      >
+        Create an account
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- ===================================================== -->
+  <!-- REGISTER MODAL -->
+  <!-- ===================================================== -->
+
+  <div
+    *ngIf="showRegister"
+    class="fixed inset-0 z-50 flex items-center
+           justify-center bg-slate-950 p-6 backdrop-blur-sm"
+  >
+
+    <!-- Modal -->
+
+    <div
+      class="relative w-full max-w-lg rounded-3xl
+             bg-white p-8 shadow-2xl"
+    >
+
+      <!-- Close -->
+
+      <button
+        type="button"
+        (click)="openLogin()"
+        class="absolute right-5 top-5 flex h-9 w-9
+               items-center justify-center rounded-full
+               bg-slate-100 text-slate-500
+               transition hover:bg-slate-200
+               hover:text-slate-900"
+      >
+        ✕
+      </button>
+
+
+      <!-- Header -->
+
+      <div class="mb-7">
+
+        <div
+          class="mb-4 flex h-12 w-12 items-center justify-center
+                 rounded-xl bg-indigo-100 text-xl"
+        >
+          👤
+        </div>
+
+        <h2 class="text-2xl font-bold text-slate-900">
+          Create Account
+        </h2>
+
+        <p class="mt-1 text-sm text-slate-500">
+          Create your account to access the products dashboard.
+        </p>
+
+      </div>
+
+
+      <!-- ========================= -->
+      <!-- REGISTER ERROR -->
+      <!-- ========================= -->
+
+      <div
+        *ngIf="registerError"
+        class="mb-5 rounded-xl border border-red-200
+               bg-red-50 px-4 py-3 text-sm text-red-700"
+      >
+
+        {{ registerError }}
+
+      </div>
+
+
+      <!-- ========================= -->
+      <!-- REGISTER SUCCESS -->
+      <!-- ========================= -->
+
+      <div
+        *ngIf="registerSuccess"
+        class="mb-5 rounded-xl border border-green-200
+               bg-green-50 px-4 py-3 text-sm text-green-700"
+      >
+
+        {{ registerSuccess }}
+
+      </div>
+
+
+      <!-- ========================= -->
+      <!-- REGISTER FORM -->
+      <!-- ========================= -->
+
+      <form
+        class="space-y-4"
+        (ngSubmit)="register()"
+      >
+
+        <!-- Username -->
+
+        <div>
+
+          <label
+            for="registerUsername"
+            class="mb-2 block text-sm font-semibold
+                   text-slate-700"
+          >
+            Username
+          </label>
+
+          <input
+            id="registerUsername"
+            name="registerUsername"
+            type="text"
+            [(ngModel)]="registerName"
+            placeholder="Choose a username"
+            autocomplete="username"
+            required
+            class="w-full rounded-xl border border-slate-300
+                   bg-white px-4 py-3 text-slate-900
+                   outline-none transition
+                   placeholder:text-slate-400
+                   focus:border-indigo-500
+                   focus:ring-4 focus:ring-indigo-100"
+          />
+
+        </div>
+
+
+        <!-- Email -->
+
+        <div>
+
+          <label
+            for="registerEmail"
+            class="mb-2 block text-sm font-semibold
+                   text-slate-700"
+          >
+            Email
+          </label>
+
+          <input
+            id="registerEmail"
+            name="registerEmail"
+            type="email"
+            [(ngModel)]="registerEmail"
+            placeholder="Enter your email"
+            autocomplete="email"
+            required
+            class="w-full rounded-xl border border-slate-300
+                   bg-white px-4 py-3 text-slate-900
+                   outline-none transition
+                   placeholder:text-slate-400
+                   focus:border-indigo-500
+                   focus:ring-4 focus:ring-indigo-100"
+          />
+
+        </div>
+
+
+        <!-- Phone -->
+
+        <div>
+
+          <label
+            for="registerPhone"
+            class="mb-2 block text-sm font-semibold
+                   text-slate-700"
+          >
+            Phone
+          </label>
+
+          <input
+            id="registerPhone"
+            name="registerPhone"
+            type="tel"
+            [(ngModel)]="registerPhone"
+            placeholder="Enter your phone number"
+            autocomplete="tel"
+            required
+            class="w-full rounded-xl border border-slate-300
+                   bg-white px-4 py-3 text-slate-900
+                   outline-none transition
+                   placeholder:text-slate-400
+                   focus:border-indigo-500
+                   focus:ring-4 focus:ring-indigo-100"
+          />
+
+        </div>
+
+
+        <!-- Password -->
+
+        <div>
+
+          <label
+            for="registerPassword"
+            class="mb-2 block text-sm font-semibold
+                   text-slate-700"
+          >
+            Password
+          </label>
+
+          <input
+            id="registerPassword"
+            name="registerPassword"
+            type="password"
+            [(ngModel)]="registerPassword"
+            placeholder="Create a password"
+            autocomplete="new-password"
+            required
+            class="w-full rounded-xl border border-slate-300
+                   bg-white px-4 py-3 text-slate-900
+                   outline-none transition
+                   placeholder:text-slate-400
+                   focus:border-indigo-500
+                   focus:ring-4 focus:ring-indigo-100"
+          />
+
+          <p class="mt-1 text-xs text-slate-400">
+            Use at least 6 characters.
+          </p>
+
+        </div>
+
+
+        <!-- Register Button -->
+
+        <button
+          type="submit"
+          [disabled]="registerLoading"
+          class="mt-2 w-full rounded-xl bg-indigo-600
+                 py-3.5 font-semibold text-white
+                 shadow-lg transition
+                 hover:bg-indigo-700
+                 disabled:cursor-not-allowed
+                 disabled:opacity-60"
+        >
+
+          <span *ngIf="!registerLoading">
+            Create Account
+          </span>
+
+          <span
+            *ngIf="registerLoading"
+            class="flex items-center justify-center gap-2"
+          >
+
+            <span
+              class="h-5 w-5 animate-spin rounded-full
+                     border-2 border-white
+                     border-t-transparent"
+            ></span>
+
+            Creating account...
+
+          </span>
+
+        </button>
+
+      </form>
+
+
+      <!-- ========================= -->
+      <!-- SWITCH TO LOGIN -->
+      <!-- ========================= -->
+
+      <div
+        class="mt-6 text-center text-sm text-slate-500"
+      >
+
+        Already have an account?
+
+        <button
+          type="button"
+          (click)="openLogin()"
+          class="ml-1 font-semibold text-indigo-600
+                 hover:text-indigo-800"
+        >
+          Login
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>

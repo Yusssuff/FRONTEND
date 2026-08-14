@@ -1,0 +1,453 @@
+<div class="min-h-screen bg-slate-950 text-white">
+
+  <!-- ========================= -->
+  <!-- Header -->
+  <!-- ========================= -->
+  <header class="border-b border-white/10 bg-slate-950/90 backdrop-blur-xl">
+    <div class="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+
+      <div class="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+
+        <!-- Title -->
+        <div>
+          <div class="flex items-center gap-3">
+            <div
+              class="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg shadow-indigo-500/20"
+            >
+              <svg
+                class="h-6 w-6 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"
+                />
+              </svg>
+            </div>
+
+            <div>
+              <h1 class="text-2xl font-bold tracking-tight text-white">
+                Products
+              </h1>
+
+              <p class="text-sm text-slate-400">
+                Manage and explore your products
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Product count -->
+        <div
+          class="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-slate-300"
+        >
+          <span class="h-2 w-2 rounded-full bg-emerald-400"></span>
+
+          {{ filteredProducts.length }}
+          {{ filteredProducts.length === 1 ? 'Product' : 'Products' }}
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+
+  <!-- ========================= -->
+  <!-- Main Content -->
+  <!-- ========================= -->
+  <main class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+
+    <!-- ========================= -->
+    <!-- Search / Actions -->
+    <!-- ========================= -->
+    <section class="mb-8">
+
+      <div
+        class="rounded-2xl border border-white/10 bg-white/[0.03] p-4 shadow-2xl shadow-black/20"
+      >
+
+        <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+
+          <!-- Search -->
+          <div class="relative w-full md:max-w-xl">
+
+            <!-- Search icon -->
+            <div
+              class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4"
+            >
+              <svg
+                class="h-5 w-5 text-slate-500"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"
+                />
+              </svg>
+            </div>
+
+            <input
+              type="text"
+              [(ngModel)]="searchTerm"
+              placeholder="Search products..."
+              class="w-full rounded-xl border border-white/10 bg-slate-900 py-3 pl-11 pr-11 text-sm text-white outline-none transition placeholder:text-slate-500 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20"
+            />
+
+            <!-- Clear search -->
+            <button
+              *ngIf="searchTerm"
+              type="button"
+              (click)="searchTerm = ''"
+              class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-500 transition hover:text-white"
+              aria-label="Clear search"
+            >
+              <svg
+                class="h-5 w-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 6l12 12M18 6 6 18"
+                />
+              </svg>
+            </button>
+
+          </div>
+
+
+          <!-- Refresh button -->
+          <button
+            type="button"
+            (click)="loadProducts()"
+            [disabled]="loading"
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-600/20 transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+
+            <svg
+              *ngIf="!loading"
+              class="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M4 4v5h5M20 20v-5h-5M5.05 9A7 7 0 0 1 17 5.93L20 9M4 15l3 3.07A7 7 0 0 0 18.95 15"
+              />
+            </svg>
+
+            <svg
+              *ngIf="loading"
+              class="h-5 w-5 animate-spin"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              ></path>
+            </svg>
+
+            {{ loading ? 'Loading...' : 'Refresh' }}
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ========================= -->
+    <!-- Error Message -->
+    <!-- ========================= -->
+    <div
+      *ngIf="errorMessage"
+      class="mb-8 flex items-start gap-4 rounded-2xl border border-red-500/20 bg-red-500/10 p-5"
+    >
+
+      <div
+        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/10"
+      >
+        <svg
+          class="h-5 w-5 text-red-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 9v4m0 4h.01M10.29 3.86l-7.82 14a2 2 0 001.74 3h15.58a2 2 0 001.74-3l-7.82-14a2 2 0 00-3.42 0Z"
+          />
+        </svg>
+      </div>
+
+      <div>
+        <h3 class="font-semibold text-red-300">
+          Unable to load products
+        </h3>
+
+        <p class="mt-1 text-sm text-red-200/70">
+          {{ errorMessage }}
+        </p>
+      </div>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- Loading Skeleton -->
+    <!-- ========================= -->
+    <section
+      *ngIf="loading"
+      class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+    >
+
+      <div
+        *ngFor="let item of [1,2,3,4,5,6,7,8]"
+        class="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"
+      >
+
+        <div class="h-40 animate-pulse bg-white/5"></div>
+
+        <div class="space-y-4 p-5">
+
+          <div class="h-5 w-3/4 animate-pulse rounded bg-white/10"></div>
+
+          <div class="h-4 w-full animate-pulse rounded bg-white/10"></div>
+
+          <div class="h-4 w-2/3 animate-pulse rounded bg-white/10"></div>
+
+          <div class="h-8 w-1/3 animate-pulse rounded bg-white/10"></div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- ========================= -->
+    <!-- Empty State -->
+    <!-- ========================= -->
+    <section
+      *ngIf="!loading && filteredProducts.length === 0"
+      class="flex min-h-[400px] items-center justify-center"
+    >
+
+      <div class="max-w-md text-center">
+
+        <div
+          class="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-white/10 bg-white/5"
+        >
+          <svg
+            class="h-10 w-10 text-slate-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="1.5"
+              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"
+            />
+          </svg>
+        </div>
+
+        <h2 class="text-xl font-semibold text-white">
+          No products found
+        </h2>
+
+        <p class="mt-2 text-sm leading-6 text-slate-400">
+          {{
+            searchTerm
+              ? 'Try changing your search term.'
+              : 'There are currently no products available.'
+          }}
+        </p>
+
+        <button
+          *ngIf="searchTerm"
+          type="button"
+          (click)="searchTerm = ''"
+          class="mt-5 rounded-xl bg-white/10 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-white/15"
+        >
+          Clear Search
+        </button>
+
+      </div>
+
+    </section>
+
+
+    <!-- ========================= -->
+    <!-- Products Grid -->
+    <!-- ========================= -->
+    <section
+      *ngIf="!loading && filteredProducts.length > 0"
+      class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+    >
+
+      <!-- Product Card -->
+      <article
+        *ngFor="let product of filteredProducts"
+        class="group overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] shadow-xl shadow-black/10 transition duration-300 hover:-translate-y-1 hover:border-indigo-500/30 hover:bg-white/[0.05] hover:shadow-indigo-500/5"
+      >
+
+        <!-- Product visual -->
+        <div
+          class="relative flex h-44 items-center justify-center overflow-hidden bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-slate-900"
+        >
+
+          <!-- Decorative background -->
+          <div
+            class="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-indigo-500/10 blur-2xl transition duration-500 group-hover:bg-indigo-500/20"
+          ></div>
+
+          <div
+            class="absolute -bottom-10 -left-10 h-32 w-32 rounded-full bg-purple-500/10 blur-2xl"
+          ></div>
+
+
+          <!-- Product icon -->
+          <div
+            class="relative flex h-20 w-20 items-center justify-center rounded-2xl border border-white/10 bg-white/5 shadow-xl backdrop-blur-sm transition duration-300 group-hover:scale-105"
+          >
+
+            <svg
+              class="h-9 w-9 text-indigo-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10"
+              />
+            </svg>
+
+          </div>
+
+          <!-- Product ID -->
+          <div
+            class="absolute right-3 top-3 rounded-lg border border-white/10 bg-black/30 px-2.5 py-1 text-xs font-medium text-slate-300 backdrop-blur-md"
+          >
+            #{{ product.id }}
+          </div>
+
+        </div>
+
+
+        <!-- Product information -->
+        <div class="p-5">
+
+          <!-- Name -->
+          <h2
+            class="truncate text-lg font-semibold text-white transition group-hover:text-indigo-300"
+            [title]="product.name"
+          >
+            {{ product.name }}
+          </h2>
+
+
+        
+        <p class="mt-2 min-h-[48px] text-sm leading-6 text-slate-400">
+  Product #{{ product.id }} from your catalog.
+</p>
+
+          <!-- Bottom section -->
+          <div
+            class="mt-5 flex items-center justify-between border-t border-white/10 pt-4"
+          >
+
+            <!-- Price -->
+            <div>
+              <p class="text-xs font-medium uppercase tracking-wider text-slate-500">
+                Price
+              </p>
+
+              <p class="mt-1 text-xl font-bold text-white">
+                {{ product.price | currency }}
+              </p>
+            </div>
+
+
+            <!-- Status -->
+            <div
+              class="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-400"
+            >
+              <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span>
+              Available
+            </div>
+
+          </div>
+
+        </div>
+
+      </article>
+
+    </section>
+
+
+    <!-- ========================= -->
+    <!-- Footer Info -->
+    <!-- ========================= -->
+    <div
+      *ngIf="!loading && filteredProducts.length > 0"
+      class="mt-8 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-sm text-slate-500 sm:flex-row"
+    >
+
+      <p>
+        Showing
+        <span class="font-medium text-slate-300">
+          {{ filteredProducts.length }}
+        </span>
+        of
+        <span class="font-medium text-slate-300">
+          {{ products.length }}
+        </span>
+        products
+      </p>
+
+      <p *ngIf="searchTerm">
+        Search:
+        <span class="font-medium text-indigo-400">
+          "{{ searchTerm }}"
+        </span>
+      </p>
+
+    </div>
+
+  </main>
+
+</div>
