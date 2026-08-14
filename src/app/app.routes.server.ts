@@ -1,41 +1,14 @@
-import { Routes } from '@angular/router';
-
-import { Auth } from './auth/auth';
-import { Products } from './products/products';
-
-import { authGuard } from './auth/auth.guard';
+import {
+  RenderMode,
+  ServerRoute
+} from '@angular/ssr';
 
 
-export const routes: Routes = [
-
-  // =========================
-  // LOGIN / REGISTER
-  // =========================
-
-  {
-    path: '',
-    component: Auth
-  },
-
-
-  // =========================
-  // PRODUCTS
-  // =========================
-
-  {
-    path: 'products',
-    component: Products,
-    canActivate: [authGuard]
-  },
-
-
-  // =========================
-  // UNKNOWN ROUTES
-  // =========================
+export const serverRoutes: ServerRoute[] = [
 
   {
     path: '**',
-    redirectTo: ''
+    renderMode: RenderMode.Client
   }
 
 ];

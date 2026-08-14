@@ -27,6 +27,10 @@ import {
   AuthService
 } from '../auth/auth.serv';
 
+import {
+  finalize
+} from 'rxjs';
+
 
 @Component({
   selector: 'app-products',
@@ -79,6 +83,10 @@ export class Products implements OnInit {
   };
 
 
+  // =========================================================
+  // CONSTRUCTOR
+  // =========================================================
+
   constructor(
     private productService: ProductService,
     private authService: AuthService,
@@ -91,6 +99,8 @@ export class Products implements OnInit {
   // =========================================================
 
   ngOnInit(): void {
+
+    console.log('Products component initialized');
 
     this.loadProducts();
 
@@ -107,23 +117,57 @@ export class Products implements OnInit {
 
     this.errorMessage = '';
 
+
     this.productService
       .getProducts(this.searchTerm)
+      .pipe(
+        finalize(() => {
+
+          this.loading = false;
+
+        })
+      )
       .subscribe({
 
         next: (products: Product[]) => {
 
-          this.products = products;
+          console.log(
+            'Products received:',
+            products
+          );
 
-          this.loading = false;
+          this.products = products;
 
         },
 
-        error: () => {
+        error: (error) => {
 
-          this.loading = false;
+          console.error(
+            'Failed to load products:',
+            error
+          );
 
           this.products = [];
+
+          if (error.status === 401) {
+
+            this.errorMessage =
+              'Your session has expired. Please login again.';
+
+            this.authService.logout();
+
+            this.router.navigate(['/']);
+
+            return;
+          }
+
+          if (error.status === 403) {
+
+            this.errorMessage =
+              'You are not authorized to access the products.';
+
+            return;
+          }
 
           this.errorMessage =
             'Unable to load products. Please make sure the backend server is running.';
@@ -136,7 +180,7 @@ export class Products implements OnInit {
 
 
   // =========================================================
-  // SEARCH
+  // SEARCH PRODUCTS
   // =========================================================
 
   searchProducts(): void {
@@ -168,9 +212,13 @@ export class Products implements OnInit {
     this.editingProduct = false;
 
     this.productForm = {
+
       id: 0,
+
       name: '',
+
       price: 0
+
     };
 
     this.errorMessage = '';
@@ -189,9 +237,13 @@ export class Products implements OnInit {
     this.editingProduct = true;
 
     this.productForm = {
+
       id: product.id,
+
       name: product.name,
+
       price: product.price
+
     };
 
     this.errorMessage = '';
@@ -208,7 +260,9 @@ export class Products implements OnInit {
   closeProductModal(): void {
 
     if (this.savingProduct) {
+
       return;
+
     }
 
     this.showProductModal = false;
@@ -227,10 +281,17 @@ export class Products implements OnInit {
 
     this.errorMessage = '';
 
-    const name = this.productForm.name.trim();
 
-    const price = Number(this.productForm.price);
+    const name =
+      this.productForm.name.trim();
 
+    const price =
+      Number(this.productForm.price);
+
+
+    // ---------------------------------------------------------
+    // VALIDATION
+    // ---------------------------------------------------------
 
     if (!name) {
 
@@ -238,24 +299,29 @@ export class Products implements OnInit {
         'Product name is required.';
 
       return;
+
     }
 
 
-    if (!Number.isFinite(price) || price < 0) {
+    if (
+      !Number.isFinite(price) ||
+      price < 0
+    ) {
 
       this.errorMessage =
         'Please enter a valid price.';
 
       return;
+
     }
 
 
     this.savingProduct = true;
 
 
-    // =======================================================
+    // =========================================================
     // UPDATE
-    // =======================================================
+    // =========================================================
 
     if (this.editingProduct) {
 
@@ -274,30 +340,23 @@ export class Products implements OnInit {
         .updateProduct(productToUpdate)
         .subscribe({
 
-          next: (updatedProduct: Product) => {
-
-            const index =
-              this.products.findIndex(
-                product =>
-                  product.id === updatedProduct.id
-              );
-
-
-            if (index !== -1) {
-
-              this.products[index] =
-                updatedProduct;
-
-            }
-
+          next: () => {
 
             this.savingProduct = false;
 
             this.showProductModal = false;
 
+            // Get the actual latest data from backend.
+            this.loadProducts();
+
           },
 
-          error: () => {
+          error: (error) => {
+
+            console.error(
+              'Update product error:',
+              error
+            );
 
             this.savingProduct = false;
 
@@ -309,12 +368,13 @@ export class Products implements OnInit {
         });
 
       return;
+
     }
 
 
-    // =======================================================
+    // =========================================================
     // CREATE
-    // =======================================================
+    // =========================================================
 
     const newProduct: Omit<Product, 'id'> = {
 
@@ -329,20 +389,23 @@ export class Products implements OnInit {
       .createProduct(newProduct)
       .subscribe({
 
-        next: (createdProduct: Product) => {
-
-          this.products = [
-            ...this.products,
-            createdProduct
-          ];
+        next: () => {
 
           this.savingProduct = false;
 
           this.showProductModal = false;
 
+          // Get the actual latest data from backend.
+          this.loadProducts();
+
         },
 
-        error: () => {
+        error: (error) => {
+
+          console.error(
+            'Create product error:',
+            error
+          );
 
           this.savingProduct = false;
 
@@ -369,11 +432,14 @@ export class Products implements OnInit {
 
 
     if (!confirmed) {
+
       return;
+
     }
 
 
-    this.deletingProductId = product.id;
+    this.deletingProductId =
+      product.id;
 
 
     this.productService
@@ -382,17 +448,19 @@ export class Products implements OnInit {
 
         next: () => {
 
-          this.products =
-            this.products.filter(
-              item =>
-                item.id !== product.id
-            );
-
           this.deletingProductId = null;
+
+          // Reload from backend.
+          this.loadProducts();
 
         },
 
-        error: () => {
+        error: (error) => {
+
+          console.error(
+            'Delete product error:',
+            error
+          );
 
           this.deletingProductId = null;
 
@@ -414,7 +482,12 @@ export class Products implements OnInit {
 
     this.authService.logout();
 
-    this.router.navigate(['/']);
+    this.router.navigate(
+      ['/'],
+      {
+        replaceUrl: true
+      }
+    );
 
   }
 
