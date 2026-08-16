@@ -1,6 +1,7 @@
 import {
   Component,
-  OnInit
+  OnInit,
+  ChangeDetectorRef
 } from '@angular/core';
 
 import {
@@ -34,7 +35,6 @@ import {
 
 @Component({
   selector: 'app-products',
-
   standalone: true,
 
   imports: [
@@ -60,7 +60,7 @@ export class Products implements OnInit {
 
 
   // =========================================================
-  // MODAL
+  // PRODUCT MODAL
   // =========================================================
 
   showProductModal = false;
@@ -73,7 +73,7 @@ export class Products implements OnInit {
 
 
   // =========================================================
-  // FORM
+  // PRODUCT FORM
   // =========================================================
 
   productForm: Product = {
@@ -90,7 +90,8 @@ export class Products implements OnInit {
   constructor(
     private productService: ProductService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private cdr: ChangeDetectorRef
   ) {}
 
 
@@ -100,9 +101,19 @@ export class Products implements OnInit {
 
   ngOnInit(): void {
 
-    console.log('Products component initialized');
+    /*
+     * Wait for the initial Angular browser rendering to finish.
+     *
+     * We intentionally use setTimeout here instead of
+     * afterNextRender(), because ngOnInit() is not an injection
+     * context for afterNextRender().
+     */
 
-    this.loadProducts();
+    setTimeout(() => {
+
+      this.loadProducts();
+
+    }, 0);
 
   }
 
@@ -120,25 +131,36 @@ export class Products implements OnInit {
 
     this.productService
       .getProducts(this.searchTerm)
+
       .pipe(
+
         finalize(() => {
 
           this.loading = false;
 
+          this.cdr.detectChanges();
+
         })
+
       )
+
       .subscribe({
 
         next: (products: Product[]) => {
 
-          console.log(
-            'Products received:',
-            products
-          );
+          /*
+           * Create a new array reference.
+           */
 
-          this.products = products;
+          this.products = [
+            ...products
+          ];
+
+
+          this.cdr.detectChanges();
 
         },
+
 
         error: (error) => {
 
@@ -147,7 +169,9 @@ export class Products implements OnInit {
             error
           );
 
+
           this.products = [];
+
 
           if (error.status === 401) {
 
@@ -156,10 +180,17 @@ export class Products implements OnInit {
 
             this.authService.logout();
 
-            this.router.navigate(['/']);
+            this.router.navigate(
+              ['/'],
+              {
+                replaceUrl: true
+              }
+            );
 
             return;
+
           }
+
 
           if (error.status === 403) {
 
@@ -167,7 +198,9 @@ export class Products implements OnInit {
               'You are not authorized to access the products.';
 
             return;
+
           }
+
 
           this.errorMessage =
             'Unable to load products. Please make sure the backend server is running.';
@@ -180,7 +213,7 @@ export class Products implements OnInit {
 
 
   // =========================================================
-  // SEARCH PRODUCTS
+  // SEARCH
   // =========================================================
 
   searchProducts(): void {
@@ -212,18 +245,16 @@ export class Products implements OnInit {
     this.editingProduct = false;
 
     this.productForm = {
-
       id: 0,
-
       name: '',
-
       price: 0
-
     };
 
     this.errorMessage = '';
 
     this.showProductModal = true;
+
+    this.cdr.detectChanges();
 
   }
 
@@ -232,23 +263,23 @@ export class Products implements OnInit {
   // OPEN EDIT MODAL
   // =========================================================
 
-  openEditModal(product: Product): void {
+  openEditModal(
+    product: Product
+  ): void {
 
     this.editingProduct = true;
 
     this.productForm = {
-
       id: product.id,
-
       name: product.name,
-
       price: product.price
-
     };
 
     this.errorMessage = '';
 
     this.showProductModal = true;
+
+    this.cdr.detectChanges();
 
   }
 
@@ -260,9 +291,7 @@ export class Products implements OnInit {
   closeProductModal(): void {
 
     if (this.savingProduct) {
-
       return;
-
     }
 
     this.showProductModal = false;
@@ -274,7 +303,6 @@ export class Products implements OnInit {
 
   // =========================================================
   // SAVE PRODUCT
-  // CREATE OR UPDATE
   // =========================================================
 
   saveProduct(): void {
@@ -288,10 +316,6 @@ export class Products implements OnInit {
     const price =
       Number(this.productForm.price);
 
-
-    // ---------------------------------------------------------
-    // VALIDATION
-    // ---------------------------------------------------------
 
     if (!name) {
 
@@ -319,9 +343,9 @@ export class Products implements OnInit {
     this.savingProduct = true;
 
 
-    // =========================================================
+    // =======================================================
     // UPDATE
-    // =========================================================
+    // =======================================================
 
     if (this.editingProduct) {
 
@@ -338,6 +362,7 @@ export class Products implements OnInit {
 
       this.productService
         .updateProduct(productToUpdate)
+
         .subscribe({
 
           next: () => {
@@ -346,22 +371,18 @@ export class Products implements OnInit {
 
             this.showProductModal = false;
 
-            // Get the actual latest data from backend.
             this.loadProducts();
 
           },
 
-          error: (error) => {
-
-            console.error(
-              'Update product error:',
-              error
-            );
+          error: () => {
 
             this.savingProduct = false;
 
             this.errorMessage =
               'Unable to update the product.';
+
+            this.cdr.detectChanges();
 
           }
 
@@ -372,21 +393,23 @@ export class Products implements OnInit {
     }
 
 
-    // =========================================================
+    // =======================================================
     // CREATE
-    // =========================================================
+    // =======================================================
 
-    const newProduct: Omit<Product, 'id'> = {
+    const newProduct:
+      Omit<Product, 'id'> = {
 
-      name: name,
+        name: name,
 
-      price: price
+        price: price
 
-    };
+      };
 
 
     this.productService
       .createProduct(newProduct)
+
       .subscribe({
 
         next: () => {
@@ -395,22 +418,18 @@ export class Products implements OnInit {
 
           this.showProductModal = false;
 
-          // Get the actual latest data from backend.
           this.loadProducts();
 
         },
 
-        error: (error) => {
-
-          console.error(
-            'Create product error:',
-            error
-          );
+        error: () => {
 
           this.savingProduct = false;
 
           this.errorMessage =
             'Unable to create the product.';
+
+          this.cdr.detectChanges();
 
         }
 
@@ -423,7 +442,9 @@ export class Products implements OnInit {
   // DELETE PRODUCT
   // =========================================================
 
-  deleteProduct(product: Product): void {
+  deleteProduct(
+    product: Product
+  ): void {
 
     const confirmed =
       window.confirm(
@@ -432,9 +453,7 @@ export class Products implements OnInit {
 
 
     if (!confirmed) {
-
       return;
-
     }
 
 
@@ -444,28 +463,25 @@ export class Products implements OnInit {
 
     this.productService
       .deleteProduct(product.id)
+
       .subscribe({
 
         next: () => {
 
           this.deletingProductId = null;
 
-          // Reload from backend.
           this.loadProducts();
 
         },
 
-        error: (error) => {
-
-          console.error(
-            'Delete product error:',
-            error
-          );
+        error: () => {
 
           this.deletingProductId = null;
 
           this.errorMessage =
             'Unable to delete the product.';
+
+          this.cdr.detectChanges();
 
         }
 
@@ -493,7 +509,7 @@ export class Products implements OnInit {
 
 
   // =========================================================
-  // FILTERED PRODUCTS
+  // FILTER
   // =========================================================
 
   get filteredProducts(): Product[] {

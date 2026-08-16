@@ -21,17 +21,26 @@ export const authGuard: CanActivateFn = () => {
     inject(Router);
 
 
-  if (
-    authService.isLoggedIn()
-  ) {
+  /*
+   * Only allow the Products page when a JWT exists
+   * in the browser.
+   */
+
+  if (authService.isLoggedIn()) {
 
     return true;
 
   }
 
 
-  return router.createUrlTree([
-    '/'
-  ]);
+  /*
+   * No valid browser session.
+   *
+   * Always return to login.
+   */
+
+  return router.createUrlTree(
+    ['/']
+  );
 
 };

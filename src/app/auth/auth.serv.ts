@@ -54,7 +54,6 @@ export interface LoginResponse {
 })
 export class AuthService {
 
-
   private readonly apiUrl =
     'http://localhost:5113/api/Account';
 
@@ -67,25 +66,18 @@ export class AuthService {
     'token_expiration';
 
 
-  constructor(
+  private readonly isBrowser: boolean;
 
+
+  constructor(
     private http: HttpClient,
 
     @Inject(PLATFORM_ID)
-    private platformId: Object
+    platformId: object
+  ) {
 
-  ) {}
-
-
-  // =========================================================
-  // BROWSER CHECK
-  // =========================================================
-
-  private isBrowser(): boolean {
-
-    return isPlatformBrowser(
-      this.platformId
-    );
+    this.isBrowser =
+      isPlatformBrowser(platformId);
 
   }
 
@@ -103,25 +95,41 @@ export class AuthService {
         this.apiUrl,
         credentials
       )
+
       .pipe(
 
         tap(response => {
 
-          if (!this.isBrowser()) {
+          /*
+           * NEVER log the response.
+           *
+           * The JWT must never be printed in the console.
+           */
+
+          if (!this.isBrowser) {
+
             return;
+
           }
 
 
-          localStorage.setItem(
-            this.tokenKey,
+          if (
+            response &&
             response.token
-          );
+          ) {
+
+            localStorage.setItem(
+              this.tokenKey,
+              response.token
+            );
 
 
-          localStorage.setItem(
-            this.expirationKey,
-            response.expiration
-          );
+            localStorage.setItem(
+              this.expirationKey,
+              response.expiration
+            );
+
+          }
 
         })
 
@@ -136,14 +144,11 @@ export class AuthService {
 
   register(
     user: RegisterRequest
-  ): Observable<string> {
+  ): Observable<any> {
 
     return this.http.post(
       `${this.apiUrl}/Register`,
-      user,
-      {
-        responseType: 'text'
-      }
+      user
     );
 
   }
@@ -155,7 +160,11 @@ export class AuthService {
 
   getToken(): string | null {
 
-    if (!this.isBrowser()) {
+    /*
+     * SSR has no localStorage.
+     */
+
+    if (!this.isBrowser) {
 
       return null;
 
@@ -175,7 +184,11 @@ export class AuthService {
 
   isLoggedIn(): boolean {
 
-    if (!this.isBrowser()) {
+    /*
+     * On the server there is no browser session.
+     */
+
+    if (!this.isBrowser) {
 
       return false;
 
@@ -183,9 +196,7 @@ export class AuthService {
 
 
     const token =
-      localStorage.getItem(
-        this.tokenKey
-      );
+      this.getToken();
 
 
     if (!token) {
@@ -195,13 +206,15 @@ export class AuthService {
     }
 
 
+    /*
+     * Check expiration if available.
+     */
+
     const expiration =
       localStorage.getItem(
         this.expirationKey
       );
 
-
-    // Check token expiration
 
     if (expiration) {
 
@@ -210,7 +223,8 @@ export class AuthService {
 
 
       if (
-        Date.now() >= expirationTime
+        !Number.isNaN(expirationTime) &&
+        expirationTime <= Date.now()
       ) {
 
         this.logout();
@@ -233,7 +247,11 @@ export class AuthService {
 
   logout(): void {
 
-    if (!this.isBrowser()) {
+    /*
+     * Never access localStorage during SSR.
+     */
+
+    if (!this.isBrowser) {
 
       return;
 
