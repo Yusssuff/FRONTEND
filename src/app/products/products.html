@@ -1,54 +1,30 @@
 <div class="min-h-screen bg-[#020617] text-white">
-
   <!-- ===================================================== -->
   <!-- HEADER -->
   <!-- ===================================================== -->
 
   <header class="border-b border-slate-800">
-
-    <div
-      class="mx-auto flex max-w-7xl items-center justify-between px-6 py-5"
-    >
-
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
       <div class="flex items-center gap-3">
-
-        <div
-          class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-600"
-        >
+        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-600">
           <span class="text-xl">◈</span>
         </div>
 
         <div>
+          <h1 class="text-xl font-bold">Products</h1>
 
-          <h1 class="text-xl font-bold">
-            Products
-          </h1>
-
-          <p class="text-sm text-slate-400">
-            Manage and explore your products
-          </p>
-
+          <p class="text-sm text-slate-400">Manage and explore your products</p>
         </div>
-
       </div>
 
-
       <div class="flex items-center gap-3">
-
         <!-- PRODUCT COUNT -->
 
-        <div
-          class="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm"
-        >
-
-          <span class="mr-2 text-emerald-400">
-            ●
-          </span>
+        <div class="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm">
+          <span class="mr-2 text-emerald-400"> ● </span>
 
           {{ filteredProducts.length }} Products
-
         </div>
-
 
         <!-- LOGOUT -->
 
@@ -59,36 +35,23 @@
         >
           ⇥ Logout
         </button>
-
       </div>
-
     </div>
-
   </header>
-
 
   <!-- ===================================================== -->
   <!-- MAIN -->
   <!-- ===================================================== -->
 
   <main class="mx-auto max-w-7xl px-6 py-8">
-
-
-    <!-- =================================================== -->
+    <!--  -->
     <!-- SEARCH + CREATE -->
-    <!-- =================================================== -->
 
-    <section
-      class="mb-6 rounded-xl border border-slate-800 bg-slate-900/60 p-4"
-    >
-
+    <section class="mb-6 rounded-xl border border-slate-800 bg-slate-900/60 p-4">
       <div class="flex flex-col gap-3 md:flex-row">
-
-
         <!-- SEARCH -->
 
         <div class="flex-1">
-
           <input
             type="text"
             [(ngModel)]="searchTerm"
@@ -96,9 +59,7 @@
             placeholder="Search products..."
             class="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-500"
           />
-
         </div>
-
 
         <!-- CLEAR -->
 
@@ -111,7 +72,6 @@
           Clear
         </button>
 
-
         <!-- REFRESH -->
 
         <button
@@ -123,7 +83,6 @@
           {{ loading ? 'Loading...' : 'Refresh' }}
         </button>
 
-
         <!-- CREATE -->
 
         <button
@@ -133,11 +92,8 @@
         >
           + Add Product
         </button>
-
       </div>
-
     </section>
-
 
     <!-- =================================================== -->
     <!-- ERROR -->
@@ -147,28 +103,19 @@
       *ngIf="errorMessage"
       class="mb-6 rounded-lg border border-red-900 bg-red-950/40 px-4 py-3 text-sm text-red-400"
     >
-
       {{ errorMessage }}
-
     </div>
-
 
     <!-- =================================================== -->
     <!-- LOADING -->
     <!-- =================================================== -->
 
-    <div
-      *ngIf="loading"
-      class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
-    >
-
+    <div *ngIf="loading" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
       <div
-        *ngFor="let item of [1,2,3,4,5,6,7,8]"
+        *ngFor="let item of [1, 2, 3, 4, 5, 6, 7, 8]"
         class="h-56 animate-pulse rounded-xl border border-slate-800 bg-slate-900"
       ></div>
-
     </div>
-
 
     <!-- =================================================== -->
     <!-- PRODUCTS -->
@@ -178,52 +125,36 @@
       *ngIf="!loading && filteredProducts.length > 0"
       class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
     >
-
-
       <article
         *ngFor="let product of filteredProducts"
         class="overflow-hidden rounded-xl border border-slate-800 bg-slate-900 transition hover:border-violet-600"
       >
-
         <!-- PRODUCT TOP -->
 
-        <div
-          class="flex h-32 items-center justify-center bg-slate-950"
-        >
-
+        <div class="flex h-32 items-center justify-center bg-slate-950">
           <div
             class="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-600/20 text-3xl text-violet-400"
           >
             ◈
           </div>
-
         </div>
-
 
         <!-- PRODUCT INFO -->
 
         <div class="p-5">
+          <p class="mb-1 text-xs text-slate-500">Product #{{ product.id }}</p>
 
-          <p class="mb-1 text-xs text-slate-500">
-            Product #{{ product.id }}
-          </p>
-
-          <h2
-            class="truncate text-lg font-semibold text-white"
-          >
+          <h2 class="truncate text-lg font-semibold text-white">
             {{ product.name }}
           </h2>
 
-
           <p class="mt-2 text-xl font-bold text-violet-400">
-            {{ product.price | number:'1.2-2' }}
+            {{ product.price | number: '1.2-2' }}
           </p>
-
 
           <!-- ACTIONS -->
 
           <div class="mt-5 flex gap-2">
-
             <button
               type="button"
               (click)="openEditModal(product)"
@@ -232,30 +163,18 @@
               Edit
             </button>
 
-
             <button
               type="button"
               (click)="deleteProduct(product)"
               [disabled]="deletingProductId === product.id"
               class="flex-1 rounded-lg border border-red-900 bg-red-950/30 px-3 py-2 text-sm text-red-400 hover:bg-red-900/40 disabled:opacity-50"
             >
-
-              {{
-                deletingProductId === product.id
-                  ? 'Deleting...'
-                  : 'Delete'
-              }}
-
+              {{ deletingProductId === product.id ? 'Deleting...' : 'Delete' }}
             </button>
-
           </div>
-
         </div>
-
       </article>
-
     </div>
-
 
     <!-- =================================================== -->
     <!-- NO PRODUCTS -->
@@ -265,18 +184,11 @@
       *ngIf="!loading && filteredProducts.length === 0"
       class="rounded-xl border border-slate-800 bg-slate-900/60 py-20 text-center"
     >
+      <div class="text-5xl text-slate-700">◈</div>
 
-      <div class="text-5xl text-slate-700">
-        ◈
-      </div>
+      <h2 class="mt-4 text-xl font-semibold">No products found</h2>
 
-      <h2 class="mt-4 text-xl font-semibold">
-        No products found
-      </h2>
-
-      <p class="mt-2 text-sm text-slate-500">
-        There are no products matching your search.
-      </p>
+      <p class="mt-2 text-sm text-slate-500">There are no products matching your search.</p>
 
       <button
         type="button"
@@ -285,11 +197,8 @@
       >
         + Create Product
       </button>
-
     </div>
-
   </main>
-
 
   <!-- ===================================================== -->
   <!-- CREATE / EDIT MODAL -->
@@ -299,40 +208,23 @@
     *ngIf="showProductModal"
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
   >
-
-    <div
-      class="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl"
-    >
-
-
+    <div class="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
       <!-- MODAL HEADER -->
 
       <div class="flex items-center justify-between">
-
         <div>
-
           <h2 class="text-xl font-bold">
-
-            {{
-              editingProduct
-                ? 'Edit Product'
-                : 'Create Product'
-            }}
-
+            {{ editingProduct ? 'Edit Product' : 'Create Product' }}
           </h2>
 
           <p class="mt-1 text-sm text-slate-400">
-
             {{
               editingProduct
                 ? 'Update the product information.'
                 : 'Add a new product to your database.'
             }}
-
           </p>
-
         </div>
-
 
         <button
           type="button"
@@ -341,9 +233,7 @@
         >
           ✕
         </button>
-
       </div>
-
 
       <!-- MODAL ERROR -->
 
@@ -354,24 +244,13 @@
         {{ errorMessage }}
       </div>
 
-
       <!-- FORM -->
 
-      <form
-        class="mt-6 space-y-5"
-        (ngSubmit)="saveProduct()"
-      >
-
-
+      <form class="mt-6 space-y-5" (ngSubmit)="saveProduct()">
         <!-- NAME -->
 
         <div>
-
-          <label
-            class="mb-2 block text-sm font-medium text-slate-300"
-          >
-            Product Name
-          </label>
+          <label class="mb-2 block text-sm font-medium text-slate-300"> Product Name </label>
 
           <input
             type="text"
@@ -380,19 +259,12 @@
             placeholder="Enter product name"
             class="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-500"
           />
-
         </div>
-
 
         <!-- PRICE -->
 
         <div>
-
-          <label
-            class="mb-2 block text-sm font-medium text-slate-300"
-          >
-            Price
-          </label>
+          <label class="mb-2 block text-sm font-medium text-slate-300"> Price </label>
 
           <input
             type="number"
@@ -403,14 +275,11 @@
             placeholder="Enter price"
             class="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-500"
           />
-
         </div>
-
 
         <!-- BUTTONS -->
 
         <div class="flex gap-3 pt-2">
-
           <button
             type="button"
             (click)="closeProductModal()"
@@ -420,29 +289,15 @@
             Cancel
           </button>
 
-
           <button
             type="submit"
             [disabled]="savingProduct"
             class="flex-1 rounded-lg bg-violet-600 px-4 py-3 text-sm font-semibold hover:bg-violet-500 disabled:opacity-50"
           >
-
-            {{
-              savingProduct
-                ? 'Saving...'
-                : editingProduct
-                  ? 'Update Product'
-                  : 'Create Product'
-            }}
-
+            {{ savingProduct ? 'Saving...' : editingProduct ? 'Update Product' : 'Create Product' }}
           </button>
-
         </div>
-
       </form>
-
     </div>
-
   </div>
-
 </div>

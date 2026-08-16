@@ -8,19 +8,13 @@ import { authGuard } from './auth/auth.guard';
 
 export const routes: Routes = [
 
-  // =========================
-  // LOGIN / REGISTER
-  // =========================
+
 
   {
     path: '',
     component: Auth
   },
 
-
-  // =========================
-  // PRODUCTS
-  // =========================
 
   {
     path: 'products',
@@ -29,9 +23,6 @@ export const routes: Routes = [
   },
 
 
-  // =========================
-  // UNKNOWN ROUTES
-  // =========================
 
   {
     path: '**',
