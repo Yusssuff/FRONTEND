@@ -1,16 +1,12 @@
 import { Injectable } from '@angular/core';
-
 import { HttpClient, HttpParams } from '@angular/common/http';
-
 import { Observable, map } from 'rxjs';
 
 import { Product } from './products.model';
 
 interface ODataProduct {
   Id: number;
-
   Name: string;
-
   Price: number;
 }
 
@@ -19,108 +15,143 @@ interface ODataResponse {
 }
 
 @Injectable({
-  providedIn: 'root',
+  providedIn: 'root'
 })
 export class ProductService {
-  private readonly apiUrl = 'http://localhost:5113/odata/Products';
 
-  constructor(private http: HttpClient) {}
+  private readonly apiUrl =
+    'http://localhost:5113/odata/Products';
 
-  // GET ALL PRODUCTS
+  constructor(
+    private http: HttpClient
+  ) {}
 
-  getProducts(search?: string, sort?: string): Observable<Product[]> {
+  // ==========================================
+  // GET PRODUCTS
+  // ==========================================
+
+  getProducts(searchTerm: string = ''): Observable<Product[]> {
+
     let params = new HttpParams();
 
-    // SEARCH
+    const search = searchTerm.trim();
 
+    if (search) {
 
-    if (search && search.trim()) {
-      const escapedSearch = search.trim().replace(/'/g, "''");
+      params = params.set(
+        '$filter',
+        `contains(Name,'${search.replace(/'/g, "''")}')`
+      );
 
-      params = params.set('$filter', `contains(Name,'${escapedSearch}')`);
     }
-
-    // SORT
-
-    if (sort) {
-      params = params.set('$orderby', sort);
-    }
-
-    // REQUEST
 
     return this.http
       .get<ODataResponse>(this.apiUrl, {
-        params,
+        params
       })
       .pipe(
-        map((response) => {
-          console.log('OData response:', response);
+
+        map((response: ODataResponse) => {
 
           if (!response || !Array.isArray(response.value)) {
-            console.error('Unexpected OData response:', response);
-
             return [];
           }
 
-          return response.value.map((product) => ({
-            id: Number(product.Id),
-            name: product.Name,
-            price: Number(product.Price),
-          }));
-        }),
+          return response.value.map(
+            (item: ODataProduct): Product => ({
+
+              id: item.Id,
+
+              name: item.Name,
+
+              price: item.Price
+
+            })
+          );
+
+        })
+
       );
+
   }
 
-  // GET PRODUCT BY ID
-
-  getProduct(id: number): Observable<Product> {
-    return this.http.get<ODataProduct>(`${this.apiUrl}(${id})`).pipe(
-      map((product) => ({
-        id: Number(product.Id),
-        name: product.Name,
-        price: Number(product.Price),
-      })),
-    );
-  }
-
+  // ==========================================
   // CREATE PRODUCT
+  // ==========================================
 
-  createProduct(product: Omit<Product, 'id'>): Observable<Product> {
+  createProduct(product: {
+    name: string;
+    price: number;
+  }): Observable<Product> {
+
     return this.http
-      .post<ODataProduct>(this.apiUrl, {
-        Name: product.name,
-        Price: product.price,
-      })
+      .post<any>(
+        this.apiUrl,
+        {
+          Name: product.name,
+          Price: product.price
+        }
+      )
       .pipe(
-        map((created) => ({
-          id: Number(created.Id),
-          name: created.Name,
-          price: Number(created.Price),
-        })),
+
+        map((item: any): Product => ({
+
+          id: item.Id,
+
+          name: item.Name,
+
+          price: item.Price
+
+        }))
+
       );
+
   }
 
+  // ==========================================
   // UPDATE PRODUCT
+  // ==========================================
 
   updateProduct(product: Product): Observable<Product> {
+
+    const url =
+      `${this.apiUrl}(${product.id})`;
+
     return this.http
-      .put<ODataProduct>(`${this.apiUrl}(${product.id})`, {
-        Id: product.id,
-        Name: product.name,
-        Price: product.price,
-      })
+      .put<any>(
+        url,
+        {
+          Name: product.name,
+          Price: product.price
+        }
+      )
       .pipe(
-        map((updated) => ({
-          id: Number(updated.Id),
-          name: updated.Name,
-          price: Number(updated.Price),
-        })),
+
+        map((item: any): Product => ({
+
+          id: item?.Id ?? product.id,
+
+          name: item?.Name ?? product.name,
+
+          price: item?.Price ?? product.price
+
+        }))
+
       );
+
   }
 
+  // ==========================================
   // DELETE PRODUCT
+  // ==========================================
 
   deleteProduct(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.apiUrl}(${id})`);
+
+    const url =
+      `${this.apiUrl}(${id})`;
+
+    return this.http.delete<void>(url);
+
   }
+
 }

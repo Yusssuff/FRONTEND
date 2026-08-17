@@ -1,7 +1,11 @@
-import { Component, Inject, PLATFORM_ID, OnInit } from '@angular/core';
+import { Component, Inject, OnInit, PLATFORM_ID } from '@angular/core';
+
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
+
 import { Router } from '@angular/router';
+
 import { AuthService } from './auth.serv';
 
 @Component({
@@ -11,22 +15,33 @@ import { AuthService } from './auth.serv';
   imports: [CommonModule, FormsModule],
 
   templateUrl: './auth.html',
+
   styleUrl: './auth.css',
 })
 export class Auth implements OnInit {
+  // =========================================================
   // LOGIN
+  // =========================================================
 
   name: string = '';
+
   password: string = '';
 
+  // =========================================================
   // REGISTER
+  // =========================================================
 
   registerName: string = '';
+
   registerEmail: string = '';
+
   registerPhone: string = '';
+
   registerPassword: string = '';
 
-  // UI STATE
+  // =========================================================
+  // UI
+  // =========================================================
 
   isRegisterMode: boolean = false;
 
@@ -38,18 +53,24 @@ export class Auth implements OnInit {
 
   constructor(
     private authService: AuthService,
+
     private router: Router,
 
     @Inject(PLATFORM_ID)
     private platformId: Object,
   ) {}
 
-  // COMPONENT INITIALIZATION
+  // =========================================================
+  // INIT
+  // =========================================================
 
   ngOnInit(): void {
     if (!isPlatformBrowser(this.platformId)) {
       return;
     }
+
+    // If already logged in,
+    // don't show the login page.
 
     if (this.authService.isLoggedIn()) {
       this.router.navigate(['/products'], {
@@ -58,40 +79,50 @@ export class Auth implements OnInit {
     }
   }
 
-  // SWITCH TO REGISTER
+  // =========================================================
+  // OPEN REGISTER
+  // =========================================================
 
   openRegister(): void {
     this.isRegisterMode = true;
 
     this.errorMessage = '';
+
     this.successMessage = '';
   }
 
-  // SWITCH TO LOGIN
+  // =========================================================
+  // OPEN LOGIN
+  // =========================================================
 
   openLogin(): void {
     this.isRegisterMode = false;
 
     this.errorMessage = '';
+
     this.successMessage = '';
   }
 
+  // =========================================================
   // CLOSE REGISTER
+  // =========================================================
 
   closeRegister(): void {
     this.isRegisterMode = false;
 
     this.errorMessage = '';
+
     this.successMessage = '';
   }
 
+  // =========================================================
   // LOGIN
+  // =========================================================
 
   login(): void {
     this.errorMessage = '';
-    this.successMessage = '';
 
-    // VALIDATION
+    this.successMessage = '';
 
     if (!this.name.trim() || !this.password) {
       this.errorMessage = 'Please enter your username and password.';
@@ -101,11 +132,11 @@ export class Auth implements OnInit {
 
     this.loading = true;
 
-    // LOGIN REQUEST
-
     this.authService
       .login({
-        name: this.name.trim(),password: this.password,
+        name: this.name.trim(),
+
+        password: this.password,
       })
       .subscribe({
         next: () => {
@@ -130,13 +161,14 @@ export class Auth implements OnInit {
       });
   }
 
+  // =========================================================
   // REGISTER
+  // =========================================================
 
   register(): void {
     this.errorMessage = '';
-    this.successMessage = '';
 
-    // BASIC VALIDATION
+    this.successMessage = '';
 
     if (
       !this.registerName.trim() ||
@@ -157,12 +189,13 @@ export class Auth implements OnInit {
 
     this.loading = true;
 
-
     const username = this.registerName.trim();
 
     const password = this.registerPassword;
 
-    // STEP 1: REGISTER
+    // =========================================================
+    // REGISTER
+    // =========================================================
 
     this.authService
       .register({
@@ -176,18 +209,19 @@ export class Auth implements OnInit {
       })
       .subscribe({
         next: () => {
-
-
-          // STEP 2: AUTOMATIC LOGIN
+          // Registration does not return JWT,
+          // so login automatically.
 
           this.authService
             .login({
               name: username,
+
               password: password,
             })
             .subscribe({
               next: () => {
                 this.loading = false;
+
                 this.router.navigate(['/products'], {
                   replaceUrl: true,
                 });
@@ -195,22 +229,19 @@ export class Auth implements OnInit {
 
               error: () => {
                 this.loading = false;
-                this.errorMessage =
-                  'Account created successfully, but automatic login failed. Please login manually.';
 
                 this.isRegisterMode = false;
+
+                this.errorMessage =
+                  'Account created successfully, but automatic login failed. Please login manually.';
               },
             });
         },
-
-        // REGISTRATION ERROR
 
         error: (error) => {
           this.loading = false;
 
           if (error.status === 400) {
-
-
             if (error.error?.errors) {
               const errors = error.error.errors;
 
