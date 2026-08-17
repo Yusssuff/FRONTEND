@@ -19,39 +19,32 @@
         <div
           class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-600"
         >
-          <span class="text-xl">
-            ◈
-          </span>
+          <span class="text-xl">◈</span>
         </div>
 
-        <!-- TITLE + USER INFO -->
+        <!-- TITLE + USER -->
 
         <div>
 
-          <div class="flex items-center gap-3">
+          <h1 class="text-xl font-bold">
+            Products
+          </h1>
 
-            <h1 class="text-xl font-bold">
-              Products
-            </h1>
+          <div class="mt-1 flex items-center gap-3">
+
+            <p class="text-sm text-slate-400">
+              Manage and explore your products
+            </p>
 
             <!-- ROLE -->
 
             <span
-              class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-medium"
-              [ngClass]="
-                isAdmin
-                  ? 'text-violet-300'
-                  : 'text-slate-300'
-              "
+              class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-medium text-violet-300"
             >
-              {{ currentRole || 'User' }}
+              {{ currentRole }}
             </span>
 
           </div>
-
-          <p class="text-sm text-slate-400">
-            Manage and explore your products
-          </p>
 
         </div>
 
@@ -67,14 +60,11 @@
           class="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm"
         >
 
-          <span
-            class="mr-2 text-emerald-400"
-          >
+          <span class="mr-2 text-emerald-400">
             ●
           </span>
 
-          {{ filteredProducts.length }}
-          Products
+          {{ filteredProducts.length }} Products
 
         </div>
 
@@ -99,21 +89,18 @@
   <!-- MAIN -->
   <!-- ===================================================== -->
 
-  <main
-    class="mx-auto max-w-7xl px-6 py-8"
-  >
+  <main class="mx-auto max-w-7xl px-6 py-8">
 
-    <!-- =================================================== -->
-    <!-- SEARCH + CONTROLS -->
-    <!-- =================================================== -->
+
+    <!-- ===================================================== -->
+    <!-- SEARCH + ACTIONS -->
+    <!-- ===================================================== -->
 
     <section
       class="mb-6 rounded-xl border border-slate-800 bg-slate-900/60 p-4"
     >
 
-      <div
-        class="flex flex-col gap-3 md:flex-row"
-      >
+      <div class="flex flex-col gap-3 md:flex-row">
 
         <!-- SEARCH -->
 
@@ -150,13 +137,7 @@
           [disabled]="loading"
           class="rounded-lg border border-slate-700 px-5 py-3 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
         >
-
-          {{
-            loading
-              ? 'Loading...'
-              : 'Refresh'
-          }}
-
+          {{ loading ? 'Loading...' : 'Refresh' }}
         </button>
 
 
@@ -176,21 +157,9 @@
     </section>
 
 
-    <!-- =================================================== -->
-    <!-- ERROR -->
-    <!-- =================================================== -->
-
-    <div
-      *ngIf="errorMessage"
-      class="mb-6 rounded-lg border border-red-900 bg-red-950/40 px-4 py-3 text-sm text-red-400"
-    >
-      {{ errorMessage }}
-    </div>
-
-
-    <!-- =================================================== -->
+    <!-- ===================================================== -->
     <!-- SUCCESS -->
-    <!-- =================================================== -->
+    <!-- ===================================================== -->
 
     <div
       *ngIf="successMessage"
@@ -200,41 +169,49 @@
     </div>
 
 
-    <!-- =================================================== -->
-    <!-- LOADING -->
-    <!-- =================================================== -->
+    <!-- ===================================================== -->
+    <!-- ERROR -->
+    <!-- ===================================================== -->
 
     <div
-      *ngIf="loading"
+      *ngIf="errorMessage"
+      class="mb-6 rounded-lg border border-red-900 bg-red-950/40 px-4 py-3 text-sm text-red-400"
+    >
+      {{ errorMessage }}
+    </div>
+
+
+    <!-- ===================================================== -->
+    <!-- LOADING -->
+    <!-- ===================================================== -->
+
+    <div
+      *ngIf="loading && products.length === 0"
       class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
     >
 
       <div
         *ngFor="let item of [1,2,3,4,5,6,7,8]"
         class="h-56 animate-pulse rounded-xl border border-slate-800 bg-slate-900"
-      >
-
-      </div>
+      ></div>
 
     </div>
 
 
-    <!-- =================================================== -->
+    <!-- ===================================================== -->
     <!-- PRODUCTS -->
-    <!-- =================================================== -->
+    <!-- IMPORTANT:
+         Products are controlled by products.length,
+         NOT by loading.
+    ====================================================== -->
 
     <div
-      *ngIf="
-        !loading &&
-        filteredProducts.length > 0
-      "
+      *ngIf="filteredProducts.length > 0"
       class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
     >
 
       <article
-        *ngFor="
-          let product of filteredProducts
-        "
+        *ngFor="let product of filteredProducts"
         class="overflow-hidden rounded-xl border border-slate-800 bg-slate-900 transition hover:border-violet-600"
       >
 
@@ -257,9 +234,7 @@
 
         <div class="p-5">
 
-          <p
-            class="mb-1 text-xs text-slate-500"
-          >
+          <p class="mb-1 text-xs text-slate-500">
             Product #{{ product.id }}
           </p>
 
@@ -274,7 +249,7 @@
           <p
             class="mt-2 text-xl font-bold text-violet-400"
           >
-            {{ product.price | number:'1.2-2' }}
+            ${{ product.price | number:'1.2-2' }}
           </p>
 
 
@@ -303,30 +278,26 @@
             <button
               type="button"
               (click)="deleteProduct(product)"
-              [disabled]="
-                deletingProductId === product.id
-              "
+              [disabled]="deletingProductId === product.id"
               class="flex-1 rounded-lg border border-red-900 bg-red-950/30 px-3 py-2 text-sm text-red-400 hover:bg-red-900/40 disabled:opacity-50"
             >
-
               {{
                 deletingProductId === product.id
                   ? 'Deleting...'
                   : 'Delete'
               }}
-
             </button>
 
           </div>
 
 
           <!-- ================================================= -->
-          <!-- USER -->
+          <!-- USER VIEW ONLY -->
           <!-- ================================================= -->
 
           <div
             *ngIf="!isAdmin"
-            class="mt-5 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-center text-sm text-slate-500"
+            class="mt-5 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-center text-sm text-slate-400"
           >
             View only
           </div>
@@ -338,35 +309,24 @@
     </div>
 
 
-    <!-- =================================================== -->
+    <!-- ===================================================== -->
     <!-- NO PRODUCTS -->
-    <!-- =================================================== -->
+    <!-- ===================================================== -->
 
     <div
-      *ngIf="
-        !loading &&
-        filteredProducts.length === 0
-      "
+      *ngIf="!loading && filteredProducts.length === 0"
       class="rounded-xl border border-slate-800 bg-slate-900/60 py-20 text-center"
     >
 
-      <div
-        class="text-5xl text-slate-700"
-      >
+      <div class="text-5xl text-slate-700">
         ◈
       </div>
 
-
-      <h2
-        class="mt-4 text-xl font-semibold"
-      >
+      <h2 class="mt-4 text-xl font-semibold">
         No products found
       </h2>
 
-
-      <p
-        class="mt-2 text-sm text-slate-500"
-      >
+      <p class="mt-2 text-sm text-slate-500">
         There are no products matching your search.
       </p>
 
@@ -389,14 +349,10 @@
 
   <!-- ===================================================== -->
   <!-- CREATE / EDIT MODAL -->
-  <!-- ADMIN ONLY -->
   <!-- ===================================================== -->
 
   <div
-    *ngIf="
-      showProductModal &&
-      isAdmin
-    "
+    *ngIf="showProductModal"
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
   >
 
@@ -406,15 +362,11 @@
 
       <!-- MODAL HEADER -->
 
-      <div
-        class="flex items-center justify-between"
-      >
+      <div class="flex items-center justify-between">
 
         <div>
 
-          <h2
-            class="text-xl font-bold"
-          >
+          <h2 class="text-xl font-bold">
             {{
               editingProduct
                 ? 'Edit Product'
@@ -422,23 +374,16 @@
             }}
           </h2>
 
-
-          <p
-            class="mt-1 text-sm text-slate-400"
-          >
-
+          <p class="mt-1 text-sm text-slate-400">
             {{
               editingProduct
                 ? 'Update the product information.'
                 : 'Add a new product to your database.'
             }}
-
           </p>
 
         </div>
 
-
-        <!-- CLOSE -->
 
         <button
           type="button"
@@ -514,11 +459,7 @@
 
         <!-- BUTTONS -->
 
-        <div
-          class="flex gap-3 pt-2"
-        >
-
-          <!-- CANCEL -->
+        <div class="flex gap-3 pt-2">
 
           <button
             type="button"
@@ -530,14 +471,11 @@
           </button>
 
 
-          <!-- SAVE -->
-
           <button
             type="submit"
             [disabled]="savingProduct"
             class="flex-1 rounded-lg bg-violet-600 px-4 py-3 text-sm font-semibold hover:bg-violet-500 disabled:opacity-50"
           >
-
             {{
               savingProduct
                 ? 'Saving...'
@@ -545,7 +483,6 @@
                   ? 'Update Product'
                   : 'Create Product'
             }}
-
           </button>
 
         </div>

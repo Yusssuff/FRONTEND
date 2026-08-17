@@ -1,39 +1,25 @@
-import {
-  Injectable
-} from '@angular/core';
-
+import { Injectable } from '@angular/core';
 import {
   HttpClient,
-  HttpParams
+  HttpParams,
 } from '@angular/common/http';
 
-import {
-  Observable,
-  map
-} from 'rxjs';
+import { Observable, map } from 'rxjs';
 
-import {
-  Product
-} from './products.model';
-
-interface ODataProduct {
-
-  Id: number;
-
-  Name: string;
-
-  Price: number;
-
-}
+import { Product } from './products.model';
 
 interface ODataResponse {
-
   value: ODataProduct[];
+}
 
+interface ODataProduct {
+  Id: number;
+  Name: string;
+  Price: number;
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class ProductService {
 
@@ -41,7 +27,7 @@ export class ProductService {
     'http://localhost:5113/odata/Products';
 
   constructor(
-    private http: HttpClient
+    private http: HttpClient,
   ) {}
 
   // =========================================================
@@ -49,166 +35,136 @@ export class ProductService {
   // =========================================================
 
   getProducts(
-    searchTerm: string = ''
+    search?: string,
   ): Observable<Product[]> {
 
-    let params =
-      new HttpParams();
+    let params = new HttpParams();
 
-    const search =
-      searchTerm.trim();
+    if (search && search.trim()) {
 
-    if (search) {
+      const escapedSearch =
+        search.trim().replace(/'/g, "''");
 
-      params =
-        params.set(
-          '$filter',
-          `contains(Name,'${search.replace(/'/g, "''")}')`
-        );
-
+      params = params.set(
+        '$filter',
+        `contains(Name,'${escapedSearch}')`,
+      );
     }
 
     return this.http
       .get<ODataResponse>(
         this.apiUrl,
         {
-          params
-        }
+          params,
+        },
       )
       .pipe(
 
-        map(
-          (
-            response: ODataResponse
-          ) => {
+        map((response) => {
 
-            if (
-              !response ||
-              !Array.isArray(
-                response.value
-              )
-            ) {
-
-              return [];
-
-            }
-
-            return response.value.map(
-              (
-                item: ODataProduct
-              ): Product => ({
-
-                id: item.Id,
-
-                name: item.Name,
-
-                price: item.Price
-
-              })
-            );
-
+          if (
+            !response ||
+            !Array.isArray(response.value)
+          ) {
+            return [];
           }
-        )
 
+          return response.value.map(
+            (product) => ({
+              id: Number(product.Id),
+              name: product.Name,
+              price: Number(product.Price),
+            }),
+          );
+        }),
       );
-
   }
 
   // =========================================================
-  // CREATE PRODUCT
+  // GET PRODUCT BY ID
+  // =========================================================
+
+  getProduct(
+    id: number,
+  ): Observable<Product> {
+
+    return this.http
+      .get<ODataProduct>(
+        `${this.apiUrl}(${id})`,
+      )
+      .pipe(
+
+        map((product) => ({
+          id: Number(product.Id),
+          name: product.Name,
+          price: Number(product.Price),
+        })),
+      );
+  }
+
+  // =========================================================
+  // CREATE
   // =========================================================
 
   createProduct(
-    product: {
-      name: string;
-      price: number;
-    }
+    product: Omit<Product, 'id'>,
   ): Observable<Product> {
 
     return this.http
-      .post<any>(
+      .post<ODataProduct>(
         this.apiUrl,
         {
           Name: product.name,
-          Price: product.price
-        }
+          Price: product.price,
+        },
       )
       .pipe(
 
-        map(
-          (item: any): Product => ({
-
-            id: item.Id,
-
-            name: item.Name,
-
-            price: item.Price
-
-          })
-        )
-
+        map((created) => ({
+          id: Number(created.Id),
+          name: created.Name,
+          price: Number(created.Price),
+        })),
       );
-
   }
 
   // =========================================================
-  // UPDATE PRODUCT
+  // UPDATE
   // =========================================================
 
   updateProduct(
-    product: Product
+    product: Product,
   ): Observable<Product> {
 
-    const url =
-      `${this.apiUrl}(${product.id})`;
-
     return this.http
-      .put<any>(
-        url,
+      .put<ODataProduct>(
+        `${this.apiUrl}(${product.id})`,
         {
+          Id: product.id,
           Name: product.name,
-          Price: product.price
-        }
+          Price: product.price,
+        },
       )
       .pipe(
 
-        map(
-          (item: any): Product => ({
-
-            id:
-              item?.Id ??
-              product.id,
-
-            name:
-              item?.Name ??
-              product.name,
-
-            price:
-              item?.Price ??
-              product.price
-
-          })
-        )
-
+        map((updated) => ({
+          id: Number(updated.Id),
+          name: updated.Name,
+          price: Number(updated.Price),
+        })),
       );
-
   }
 
   // =========================================================
-  // DELETE PRODUCT
+  // DELETE
   // =========================================================
 
   deleteProduct(
-    id: number
+    id: number,
   ): Observable<void> {
 
-    const url =
-      `${this.apiUrl}(${id})`;
-
     return this.http.delete<void>(
-      url
+      `${this.apiUrl}(${id})`,
     );
-
   }
-
 }

@@ -1,36 +1,41 @@
 import {
-  Inject,
   Injectable,
-  PLATFORM_ID
+  Inject,
+  PLATFORM_ID,
 } from '@angular/core';
 
-import { isPlatformBrowser } from '@angular/common';
+import {
+  isPlatformBrowser,
+} from '@angular/common';
 
-import { HttpClient } from '@angular/common/http';
+import {
+  HttpClient,
+} from '@angular/common/http';
 
 import {
   Observable,
-  tap
+  tap,
 } from 'rxjs';
 
-interface LoginResponse {
-  token: string;
-  expiration?: string;
+export interface LoginRequest {
+  name: string;
+  password: string;
 }
 
-interface JwtPayload {
-  sub?: string;
-  name?: string;
+export interface RegisterRequest {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+}
 
-  role?: string | string[];
-
-  exp?: number;
-
-  [key: string]: any;
+export interface LoginResponse {
+  token: string;
+  expiration: string;
 }
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
 
@@ -40,92 +45,74 @@ export class AuthService {
   private readonly tokenKey =
     'jwt_token';
 
+  private readonly expirationKey =
+    'token_expiration';
+
+  private readonly isBrowser: boolean;
+
   constructor(
     private http: HttpClient,
 
     @Inject(PLATFORM_ID)
-    private platformId: Object
-  ) {}
+    platformId: object,
+  ) {
+    this.isBrowser =
+      isPlatformBrowser(platformId);
+  }
 
   // =========================================================
   // LOGIN
   // =========================================================
 
-  login(data: {
-    name: string;
-    password: string;
-  }): Observable<LoginResponse> {
+  login(
+    credentials: LoginRequest,
+  ): Observable<LoginResponse> {
 
     return this.http
       .post<LoginResponse>(
         this.apiUrl,
-        data
+        credentials,
       )
       .pipe(
 
         tap((response) => {
+
+          if (!this.isBrowser) {
+            return;
+          }
 
           if (
             response &&
             response.token
           ) {
 
-            this.setToken(
-              response.token
+            localStorage.setItem(
+              this.tokenKey,
+              response.token,
             );
 
+            localStorage.setItem(
+              this.expirationKey,
+              response.expiration,
+            );
           }
 
-        })
-
+        }),
       );
-
   }
 
   // =========================================================
   // REGISTER
   // =========================================================
 
-  register(data: {
-    name: string;
-    email: string;
-    phone: string;
-    password: string;
-  }): Observable<any> {
+  register(
+    user: RegisterRequest,
+  ): Observable<any> {
 
     return this.http.post(
       `${this.apiUrl}/Register`,
-      data,
-      {
-        responseType: 'text'
-      }
+      user,
     );
-
-  }
-
-  // =========================================================
-  // SAVE TOKEN
-  // =========================================================
-
-  private setToken(
-    token: string
-  ): void {
-
-    if (
-      !isPlatformBrowser(
-        this.platformId
-      )
-    ) {
-
-      return;
-
-    }
-
-    localStorage.setItem(
-      this.tokenKey,
-      token
-    );
-
   }
 
   // =========================================================
@@ -134,224 +121,101 @@ export class AuthService {
 
   getToken(): string | null {
 
-    if (
-      !isPlatformBrowser(
-        this.platformId
-      )
-    ) {
-
+    if (!this.isBrowser) {
       return null;
-
     }
 
     return localStorage.getItem(
-      this.tokenKey
+      this.tokenKey,
     );
-
   }
 
   // =========================================================
-  // LOGOUT
-  // =========================================================
-
-  logout(): void {
-
-    if (
-      !isPlatformBrowser(
-        this.platformId
-      )
-    ) {
-
-      return;
-
-    }
-
-    localStorage.removeItem(
-      this.tokenKey
-    );
-
-  }
-
-  // =========================================================
-  // CHECK LOGIN
-  // =========================================================
-
-  isLoggedIn(): boolean {
-
-    const token =
-      this.getToken();
-
-    if (!token) {
-
-      return false;
-
-    }
-
-    const payload =
-      this.decodeToken(token);
-
-    if (!payload) {
-
-      this.logout();
-
-      return false;
-
-    }
-
-    if (
-      payload.exp &&
-      payload.exp * 1000 <= Date.now()
-    ) {
-
-      this.logout();
-
-      return false;
-
-    }
-
-    return true;
-
-  }
-
-  // =========================================================
-  // DECODE JWT
-  // =========================================================
-
-  private decodeToken(
-    token: string
-  ): JwtPayload | null {
-
-    if (
-      !isPlatformBrowser(
-        this.platformId
-      )
-    ) {
-
-      return null;
-
-    }
-
-    try {
-
-      const parts =
-        token.split('.');
-
-      if (
-        parts.length !== 3
-      ) {
-
-        return null;
-
-      }
-
-      const base64Url =
-        parts[1];
-
-      const base64 =
-        base64Url
-          .replace(/-/g, '+')
-          .replace(/_/g, '/');
-
-      const padded =
-        base64.padEnd(
-          base64.length +
-          (4 - base64.length % 4) % 4,
-          '='
-        );
-
-      const jsonPayload =
-        decodeURIComponent(
-
-          atob(padded)
-            .split('')
-            .map(
-              character =>
-                '%' +
-                (
-                  '00' +
-                  character
-                    .charCodeAt(0)
-                    .toString(16)
-                ).slice(-2)
-            )
-            .join('')
-
-        );
-
-      return JSON.parse(
-        jsonPayload
-      );
-
-    }
-    catch {
-
-      return null;
-
-    }
-
-  }
-
-  // =========================================================
-  // GET CURRENT ROLE
+  // GET ROLE
   // =========================================================
 
   getRole(): string | null {
 
-    const token =
-      this.getToken();
+    const token = this.getToken();
 
     if (!token) {
+      return null;
+    }
+
+    try {
+
+      const parts = token.split('.');
+
+      if (parts.length !== 3) {
+        return null;
+      }
+
+      const payload = JSON.parse(
+        this.decodeBase64Url(parts[1]),
+      );
+
+      /*
+       * ASP.NET Core can store the role under:
+       *
+       * role
+       *
+       * roles
+       *
+       * http://schemas.microsoft.com/ws/2008/06/identity/claims/role
+       */
+
+      const roleClaim =
+        payload[
+          'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
+        ] ??
+        payload['role'] ??
+        payload['roles'];
+
+      if (Array.isArray(roleClaim)) {
+        return roleClaim[0] ?? null;
+      }
+
+      if (typeof roleClaim === 'string') {
+        return roleClaim;
+      }
 
       return null;
 
-    }
-
-    const payload =
-      this.decodeToken(token);
-
-    if (!payload) {
-
+    } catch {
       return null;
+    }
+  }
 
+  // =========================================================
+  // BASE64 URL DECODE
+  // =========================================================
+
+  private decodeBase64Url(
+    value: string,
+  ): string {
+
+    let base64 = value
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+
+    while (base64.length % 4) {
+      base64 += '=';
     }
 
-    /*
-     * ASP.NET Core Identity normally creates:
-     *
-     * http://schemas.microsoft.com/ws/2008/06/identity/claims/role
-     *
-     * We support that AND "role".
-     */
-
-    const roleClaim =
-      payload[
-        'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
-      ];
-
-    const role =
-      roleClaim ??
-      payload.role;
-
-    if (
-      Array.isArray(role)
-    ) {
-
-      return role.length > 0
-        ? String(role[0])
-        : null;
-
-    }
-
-    if (
-      typeof role === 'string'
-    ) {
-
-      return role;
-
-    }
-
-    return null;
-
+    return decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map(
+          (char) =>
+            '%' +
+            (
+              '00' +
+              char.charCodeAt(0)
+                .toString(16)
+            ).slice(-2),
+        )
+        .join(''),
+    );
   }
 
   // =========================================================
@@ -360,14 +224,9 @@ export class AuthService {
 
   isAdmin(): boolean {
 
-    const role =
-      this.getRole();
+    const role = this.getRole();
 
-    return (
-      role?.trim().toLowerCase()
-      === 'admin'
-    );
-
+    return role?.toLowerCase() === 'admin';
   }
 
   // =========================================================
@@ -376,14 +235,67 @@ export class AuthService {
 
   isUser(): boolean {
 
-    const role =
-      this.getRole();
+    const role = this.getRole();
 
-    return (
-      role?.trim().toLowerCase()
-      === 'user'
-    );
-
+    return role?.toLowerCase() === 'user';
   }
 
+  // =========================================================
+  // CHECK LOGIN
+  // =========================================================
+
+  isLoggedIn(): boolean {
+
+    if (!this.isBrowser) {
+      return false;
+    }
+
+    const token = this.getToken();
+
+    if (!token) {
+      return false;
+    }
+
+    const expiration =
+      localStorage.getItem(
+        this.expirationKey,
+      );
+
+    if (expiration) {
+
+      const expirationTime =
+        new Date(expiration).getTime();
+
+      if (
+        !Number.isNaN(expirationTime) &&
+        expirationTime <= Date.now()
+      ) {
+
+        this.logout();
+
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  // =========================================================
+  // LOGOUT
+  // =========================================================
+
+  logout(): void {
+
+    if (!this.isBrowser) {
+      return;
+    }
+
+    localStorage.removeItem(
+      this.tokenKey,
+    );
+
+    localStorage.removeItem(
+      this.expirationKey,
+    );
+  }
 }
