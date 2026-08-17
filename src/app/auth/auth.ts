@@ -1,24 +1,44 @@
-import { Component, Inject, OnInit, PLATFORM_ID } from '@angular/core';
+import {
+  Component,
+  Inject,
+  OnInit,
+  PLATFORM_ID
+} from '@angular/core';
 
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import {
+  CommonModule,
+  isPlatformBrowser
+} from '@angular/common';
 
-import { FormsModule } from '@angular/forms';
+import {
+  FormsModule
+} from '@angular/forms';
 
-import { Router } from '@angular/router';
+import {
+  Router
+} from '@angular/router';
 
-import { AuthService } from './auth.serv';
+import {
+  AuthService
+} from './auth.serv';
 
 @Component({
   selector: 'app-auth',
+
   standalone: true,
 
-  imports: [CommonModule, FormsModule],
+  imports: [
+    CommonModule,
+    FormsModule
+  ],
 
   templateUrl: './auth.html',
 
-  styleUrl: './auth.css',
+  styleUrl: './auth.css'
 })
-export class Auth implements OnInit {
+export class Auth
+  implements OnInit {
+
   // =========================================================
   // LOGIN
   // =========================================================
@@ -57,7 +77,7 @@ export class Auth implements OnInit {
     private router: Router,
 
     @Inject(PLATFORM_ID)
-    private platformId: Object,
+    private platformId: Object
   ) {}
 
   // =========================================================
@@ -65,18 +85,39 @@ export class Auth implements OnInit {
   // =========================================================
 
   ngOnInit(): void {
-    if (!isPlatformBrowser(this.platformId)) {
+
+    /*
+     * Do not access localStorage during SSR.
+     */
+
+    if (
+      !isPlatformBrowser(
+        this.platformId
+      )
+    ) {
+
       return;
+
     }
 
-    // If already logged in,
-    // don't show the login page.
+    /*
+     * If the user already has a valid JWT,
+     * go directly to products.
+     */
 
-    if (this.authService.isLoggedIn()) {
-      this.router.navigate(['/products'], {
-        replaceUrl: true,
-      });
+    if (
+      this.authService.isLoggedIn()
+    ) {
+
+      this.router.navigate(
+        ['/products'],
+        {
+          replaceUrl: true
+        }
+      );
+
     }
+
   }
 
   // =========================================================
@@ -84,11 +125,13 @@ export class Auth implements OnInit {
   // =========================================================
 
   openRegister(): void {
+
     this.isRegisterMode = true;
 
     this.errorMessage = '';
 
     this.successMessage = '';
+
   }
 
   // =========================================================
@@ -96,11 +139,13 @@ export class Auth implements OnInit {
   // =========================================================
 
   openLogin(): void {
+
     this.isRegisterMode = false;
 
     this.errorMessage = '';
 
     this.successMessage = '';
+
   }
 
   // =========================================================
@@ -108,11 +153,13 @@ export class Auth implements OnInit {
   // =========================================================
 
   closeRegister(): void {
+
     this.isRegisterMode = false;
 
     this.errorMessage = '';
 
     this.successMessage = '';
+
   }
 
   // =========================================================
@@ -120,45 +167,83 @@ export class Auth implements OnInit {
   // =========================================================
 
   login(): void {
+
     this.errorMessage = '';
 
     this.successMessage = '';
 
-    if (!this.name.trim() || !this.password) {
-      this.errorMessage = 'Please enter your username and password.';
+    if (
+      !this.name.trim() ||
+      !this.password
+    ) {
+
+      this.errorMessage =
+        'Please enter your username and password.';
 
       return;
+
     }
 
     this.loading = true;
 
     this.authService
       .login({
-        name: this.name.trim(),
 
-        password: this.password,
+        name:
+          this.name.trim(),
+
+        password:
+          this.password
+
       })
       .subscribe({
+
         next: () => {
+
           this.loading = false;
 
-          this.router.navigate(['/products'], {
-            replaceUrl: true,
-          });
+          this.router.navigate(
+            ['/products'],
+            {
+              replaceUrl: true
+            }
+          );
+
         },
 
-        error: (error) => {
+        error: (
+          error
+        ) => {
+
           this.loading = false;
 
-          if (error.status === 401) {
-            this.errorMessage = 'Invalid username or password.';
-          } else if (error.status === 400) {
-            this.errorMessage = 'Invalid login information.';
-          } else {
-            this.errorMessage = 'Unable to login. Please make sure the backend server is running.';
+          if (
+            error.status === 401
+          ) {
+
+            this.errorMessage =
+              'Invalid username or password.';
+
           }
-        },
+          else if (
+            error.status === 400
+          ) {
+
+            this.errorMessage =
+              'Invalid login information.';
+
+          }
+          else {
+
+            this.errorMessage =
+              'Unable to login. Please make sure the backend server is running.';
+
+          }
+
+        }
+
       });
+
   }
 
   // =========================================================
@@ -166,6 +251,7 @@ export class Auth implements OnInit {
   // =========================================================
 
   register(): void {
+
     this.errorMessage = '';
 
     this.successMessage = '';
@@ -176,99 +262,184 @@ export class Auth implements OnInit {
       !this.registerPhone.trim() ||
       !this.registerPassword
     ) {
-      this.errorMessage = 'Please fill in all fields.';
+
+      this.errorMessage =
+        'Please fill in all fields.';
 
       return;
+
     }
 
-    if (this.registerPassword.length < 6) {
-      this.errorMessage = 'Password must be at least 6 characters.';
+    if (
+      this.registerPassword.length < 6
+    ) {
+
+      this.errorMessage =
+        'Password must be at least 6 characters.';
 
       return;
+
     }
 
     this.loading = true;
 
-    const username = this.registerName.trim();
+    const username =
+      this.registerName.trim();
 
-    const password = this.registerPassword;
-
-    // =========================================================
-    // REGISTER
-    // =========================================================
+    const password =
+      this.registerPassword;
 
     this.authService
       .register({
-        name: username,
 
-        email: this.registerEmail.trim(),
+        name:
+          username,
 
-        phone: this.registerPhone.trim(),
+        email:
+          this.registerEmail.trim(),
 
-        password: password,
+        phone:
+          this.registerPhone.trim(),
+
+        password
+
       })
       .subscribe({
+
         next: () => {
-          // Registration does not return JWT,
-          // so login automatically.
+
+          /*
+           * Register endpoint does not
+           * return JWT.
+           *
+           * Login automatically.
+           */
 
           this.authService
             .login({
-              name: username,
 
-              password: password,
+              name:
+                username,
+
+              password
+
             })
             .subscribe({
+
               next: () => {
+
                 this.loading = false;
 
-                this.router.navigate(['/products'], {
-                  replaceUrl: true,
-                });
+                this.router.navigate(
+                  ['/products'],
+                  {
+                    replaceUrl: true
+                  }
+                );
+
               },
 
               error: () => {
+
                 this.loading = false;
 
-                this.isRegisterMode = false;
+                this.isRegisterMode =
+                  false;
 
                 this.errorMessage =
                   'Account created successfully, but automatic login failed. Please login manually.';
-              },
+
+              }
+
             });
+
         },
 
-        error: (error) => {
+        error: (
+          error
+        ) => {
+
           this.loading = false;
 
-          if (error.status === 400) {
-            if (error.error?.errors) {
-              const errors = error.error.errors;
+          if (
+            error.status === 400
+          ) {
 
-              const messages: string[] = [];
+            if (
+              error.error?.errors
+            ) {
 
-              Object.keys(errors).forEach((key) => {
-                const fieldErrors = errors[key];
+              const errors =
+                error.error.errors;
 
-                if (Array.isArray(fieldErrors)) {
-                  messages.push(...fieldErrors);
+              const messages:
+                string[] = [];
+
+              Object.keys(
+                errors
+              ).forEach(
+                key => {
+
+                  const fieldErrors =
+                    errors[key];
+
+                  if (
+                    Array.isArray(
+                      fieldErrors
+                    )
+                  ) {
+
+                    messages.push(
+                      ...fieldErrors
+                    );
+
+                  }
+
                 }
-              });
+              );
 
               this.errorMessage =
-                messages.length > 0 ? messages.join(' ') : 'Registration information is invalid.';
-            } else if (typeof error.error === 'string') {
-              this.errorMessage = error.error;
-            } else {
-              this.errorMessage = 'Registration failed. Please check your information.';
+                messages.length > 0
+                  ? messages.join(' ')
+                  : 'Registration information is invalid.';
+
             }
-          } else if (error.status === 409) {
-            this.errorMessage = 'This username or email is already registered.';
-          } else {
+            else if (
+              typeof error.error ===
+              'string'
+            ) {
+
+              this.errorMessage =
+                error.error;
+
+            }
+            else {
+
+              this.errorMessage =
+                'Registration failed. Please check your information.';
+
+            }
+
+          }
+          else if (
+            error.status === 409
+          ) {
+
+            this.errorMessage =
+              'This username or email is already registered.';
+
+          }
+          else {
+
             this.errorMessage =
               'Unable to register. Please make sure the backend server is running.';
+
           }
-        },
+
+        }
+
       });
+
   }
+
 }

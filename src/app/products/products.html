@@ -1,426 +1,559 @@
 <div class="min-h-screen bg-[#020617] text-white">
-  <!-- ========================================================= -->
+
+  <!-- ===================================================== -->
   <!-- HEADER -->
-  <!-- ========================================================= -->
+  <!-- ===================================================== -->
 
-  <header class="border-b border-slate-800 bg-[#020617]">
-    <div class="max-w-7xl mx-auto px-6 py-5">
-      <div class="flex items-center justify-between">
-        <!-- LEFT SIDE -->
-        <div class="flex items-center gap-4">
-          <!-- Product Icon -->
-          <div
-            class="w-14 h-14 rounded-2xl bg-violet-600 flex items-center justify-center shadow-lg shadow-violet-600/20"
-          >
-            <svg
-              class="w-7 h-7 text-white"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"
-              />
+  <header class="border-b border-slate-800">
 
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 7.5l8 4.5 8-4.5M12 12v9" />
-            </svg>
-          </div>
+    <div
+      class="mx-auto flex max-w-7xl items-center justify-between px-6 py-5"
+    >
 
-          <!-- TITLE + ROLE -->
-          <div>
-            <h1 class="text-2xl font-bold text-white">Products</h1>
+      <!-- LEFT -->
 
-            <div class="flex items-center gap-3 mt-1">
-              <p class="text-sm text-slate-400">Manage and explore your products</p>
+      <div class="flex items-center gap-3">
 
-              <!-- ROLE -->
-              <span
-                class="px-3 py-1 rounded-full text-xs font-semibold border border-slate-700 bg-slate-900 text-violet-300"
-              >
-                {{ currentRole || 'User' }}
-              </span>
-            </div>
-          </div>
+        <!-- ICON -->
+
+        <div
+          class="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-600"
+        >
+          <span class="text-xl">
+            ◈
+          </span>
         </div>
 
-        <!-- RIGHT SIDE -->
-        <div class="flex items-center gap-3">
-          <!-- PRODUCT COUNTER -->
-          <div
-            class="flex items-center gap-2 px-4 py-2 rounded-full border border-slate-700 bg-[#0f172a] text-sm text-slate-300"
-          >
-            <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50">
+        <!-- TITLE + USER INFO -->
+
+        <div>
+
+          <div class="flex items-center gap-3">
+
+            <h1 class="text-xl font-bold">
+              Products
+            </h1>
+
+            <!-- ROLE -->
+
+            <span
+              class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs font-medium"
+              [ngClass]="
+                isAdmin
+                  ? 'text-violet-300'
+                  : 'text-slate-300'
+              "
+            >
+              {{ currentRole || 'User' }}
             </span>
 
-            {{ products.length }} Products
           </div>
 
-          <!-- LOGOUT -->
-          <button
-            type="button"
-            (click)="logout()"
-            class="px-4 py-2 rounded-lg border border-red-500/40 bg-red-500/5 text-red-400 hover:bg-red-500/10 hover:border-red-500/60 transition"
-          >
-            <span class="mr-1">↪</span>
-            Logout
-          </button>
+          <p class="text-sm text-slate-400">
+            Manage and explore your products
+          </p>
+
         </div>
+
       </div>
+
+      <!-- RIGHT -->
+
+      <div class="flex items-center gap-3">
+
+        <!-- PRODUCT COUNT -->
+
+        <div
+          class="rounded-full border border-slate-700 bg-slate-900 px-4 py-2 text-sm"
+        >
+
+          <span
+            class="mr-2 text-emerald-400"
+          >
+            ●
+          </span>
+
+          {{ filteredProducts.length }}
+          Products
+
+        </div>
+
+        <!-- LOGOUT -->
+
+        <button
+          type="button"
+          (click)="logout()"
+          class="rounded-lg border border-red-900 bg-red-950/30 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-950"
+        >
+          ⇥ Logout
+        </button>
+
+      </div>
+
     </div>
+
   </header>
 
-  <!-- ========================================================= -->
+
+  <!-- ===================================================== -->
   <!-- MAIN -->
-  <!-- ========================================================= -->
+  <!-- ===================================================== -->
 
-  <main class="max-w-7xl mx-auto px-6 py-8">
-    <!-- ======================================================= -->
-    <!-- SUCCESS MESSAGE -->
-    <!-- ======================================================= -->
+  <main
+    class="mx-auto max-w-7xl px-6 py-8"
+  >
 
-    <div
-      *ngIf="successMessage"
-      class="mb-6 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300"
-    >
-      {{ successMessage }}
-    </div>
-
-    <!-- ======================================================= -->
-    <!-- ERROR MESSAGE -->
-    <!-- ======================================================= -->
-
-    <div
-      *ngIf="errorMessage"
-      class="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
-    >
-      {{ errorMessage }}
-    </div>
-
-    <!-- ======================================================= -->
-    <!-- SEARCH / ACTION BAR -->
-    <!-- ======================================================= -->
+    <!-- =================================================== -->
+    <!-- SEARCH + CONTROLS -->
+    <!-- =================================================== -->
 
     <section
-      class="mb-8 rounded-2xl border border-slate-800 bg-[#0f172a]/80 p-4 shadow-xl shadow-black/10"
+      class="mb-6 rounded-xl border border-slate-800 bg-slate-900/60 p-4"
     >
-      <div class="flex flex-col lg:flex-row gap-3">
-        <!-- SEARCH INPUT -->
-        <div class="relative flex-1">
-          <!-- Search Icon -->
-          <svg
-            class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-          >
-            <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.35-4.35" />
 
-            <circle cx="11" cy="11" r="7" />
-          </svg>
+      <div
+        class="flex flex-col gap-3 md:flex-row"
+      >
+
+        <!-- SEARCH -->
+
+        <div class="flex-1">
 
           <input
             type="text"
             [(ngModel)]="searchTerm"
-            (keyup.enter)="searchProducts()"
+            (input)="searchProducts()"
             placeholder="Search products..."
-            class="w-full h-12 rounded-xl border border-slate-700 bg-[#020617] pl-12 pr-4 text-sm text-white placeholder:text-slate-500 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
+            class="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-500"
           />
+
         </div>
 
-        <!-- SEARCH -->
-        <button
-          type="button"
-          (click)="searchProducts()"
-          [disabled]="loading"
-          class="h-12 px-5 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium transition"
-        >
-          Search
-        </button>
 
         <!-- CLEAR -->
+
         <button
+          *ngIf="searchTerm"
           type="button"
           (click)="clearSearch()"
-          class="h-12 px-5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 transition"
+          class="rounded-lg border border-slate-700 px-5 py-3 text-sm text-slate-300 hover:bg-slate-800"
         >
           Clear
         </button>
 
+
         <!-- REFRESH -->
+
         <button
           type="button"
           (click)="loadProducts()"
           [disabled]="loading"
-          class="h-12 px-5 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed text-slate-300 transition"
+          class="rounded-lg border border-slate-700 px-5 py-3 text-sm text-slate-300 hover:bg-slate-800 disabled:opacity-50"
         >
-          <span *ngIf="!loading"> ↻ Refresh </span>
 
-          <span *ngIf="loading"> Loading... </span>
+          {{
+            loading
+              ? 'Loading...'
+              : 'Refresh'
+          }}
+
         </button>
 
-        <!-- ADD PRODUCT -->
-        <!-- ADMIN ONLY -->
+
+        <!-- ADD PRODUCT - ADMIN ONLY -->
+
         <button
           *ngIf="isAdmin"
           type="button"
           (click)="openCreateModal()"
-          class="h-12 px-5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-medium transition shadow-lg shadow-violet-600/10"
+          class="rounded-lg bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500"
         >
-          <span class="mr-1">+</span>
-          Add Product
+          + Add Product
         </button>
+
       </div>
+
     </section>
 
-    <!-- ======================================================= -->
-    <!-- LOADING -->
-    <!-- ======================================================= -->
+
+    <!-- =================================================== -->
+    <!-- ERROR -->
+    <!-- =================================================== -->
 
     <div
-      *ngIf="loading && products.length === 0"
-      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
+      *ngIf="errorMessage"
+      class="mb-6 rounded-lg border border-red-900 bg-red-950/40 px-4 py-3 text-sm text-red-400"
     >
-      <div
-        *ngFor="let item of [1, 2, 3, 4, 5, 6, 7, 8]"
-        class="h-72 rounded-2xl border border-slate-800 bg-[#0f172a] animate-pulse"
-      >
-        <div class="h-32 bg-slate-900"></div>
-
-        <div class="p-5 space-y-4">
-          <div class="h-4 w-2/3 bg-slate-800 rounded"></div>
-
-          <div class="h-4 w-1/2 bg-slate-800 rounded"></div>
-
-          <div class="h-10 bg-slate-800 rounded"></div>
-        </div>
-      </div>
+      {{ errorMessage }}
     </div>
 
-    <!-- ======================================================= -->
-    <!-- PRODUCTS GRID -->
-    <!-- ======================================================= -->
 
-    <section
-      *ngIf="!loading || products.length > 0"
-      class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5"
+    <!-- =================================================== -->
+    <!-- SUCCESS -->
+    <!-- =================================================== -->
+
+    <div
+      *ngIf="successMessage"
+      class="mb-6 rounded-lg border border-emerald-900 bg-emerald-950/40 px-4 py-3 text-sm text-emerald-400"
     >
-      <!-- PRODUCT CARD -->
-      <article
-        *ngFor="let product of filteredProducts"
-        class="group overflow-hidden rounded-2xl border border-slate-800 bg-[#0f172a] shadow-xl shadow-black/10 hover:border-violet-500/40 hover:-translate-y-1 transition-all duration-200"
-      >
-        <!-- CARD TOP -->
-        <div class="relative h-32 bg-gradient-to-br from-violet-600 to-violet-800 p-5">
-          <!-- ICON -->
-          <div
-            class="w-12 h-12 rounded-xl bg-white/10 border border-white/10 flex items-center justify-center"
-          >
-            <svg
-              class="w-6 h-6 text-white"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"
-              />
+      {{ successMessage }}
+    </div>
 
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 7.5l8 4.5 8-4.5M12 12v9" />
-            </svg>
+
+    <!-- =================================================== -->
+    <!-- LOADING -->
+    <!-- =================================================== -->
+
+    <div
+      *ngIf="loading"
+      class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
+    >
+
+      <div
+        *ngFor="let item of [1,2,3,4,5,6,7,8]"
+        class="h-56 animate-pulse rounded-xl border border-slate-800 bg-slate-900"
+      >
+
+      </div>
+
+    </div>
+
+
+    <!-- =================================================== -->
+    <!-- PRODUCTS -->
+    <!-- =================================================== -->
+
+    <div
+      *ngIf="
+        !loading &&
+        filteredProducts.length > 0
+      "
+      class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4"
+    >
+
+      <article
+        *ngFor="
+          let product of filteredProducts
+        "
+        class="overflow-hidden rounded-xl border border-slate-800 bg-slate-900 transition hover:border-violet-600"
+      >
+
+        <!-- PRODUCT TOP -->
+
+        <div
+          class="flex h-32 items-center justify-center bg-slate-950"
+        >
+
+          <div
+            class="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-600/20 text-3xl text-violet-400"
+          >
+            ◈
           </div>
 
-          <!-- ID -->
-          <span class="absolute right-5 top-5 text-xs text-white/60"> #{{ product.id }} </span>
         </div>
 
-        <!-- CARD BODY -->
+
+        <!-- PRODUCT INFO -->
+
         <div class="p-5">
-          <!-- PRODUCT NAME -->
-          <h2 class="text-base font-semibold text-white truncate">
+
+          <p
+            class="mb-1 text-xs text-slate-500"
+          >
+            Product #{{ product.id }}
+          </p>
+
+
+          <h2
+            class="truncate text-lg font-semibold text-white"
+          >
             {{ product.name }}
           </h2>
 
-          <!-- PRICE -->
-          <div class="mt-3">
-            <p class="text-xs text-slate-500">Price</p>
 
-            <p class="mt-1 text-xl font-bold text-violet-400">${{ product.price }}</p>
-          </div>
+          <p
+            class="mt-2 text-xl font-bold text-violet-400"
+          >
+            {{ product.price | number:'1.2-2' }}
+          </p>
 
-          <!-- DIVIDER -->
-          <div class="my-4 border-t border-slate-800"></div>
 
+          <!-- ================================================= -->
           <!-- ADMIN ACTIONS -->
-          <div *ngIf="isAdmin" class="flex gap-2">
+          <!-- ================================================= -->
+
+          <div
+            *ngIf="isAdmin"
+            class="mt-5 flex gap-2"
+          >
+
             <!-- EDIT -->
+
             <button
               type="button"
               (click)="openEditModal(product)"
-              class="flex-1 h-10 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium transition"
+              class="flex-1 rounded-lg border border-violet-800 bg-violet-950/30 px-3 py-2 text-sm text-violet-300 hover:bg-violet-900/40"
             >
               Edit
             </button>
 
+
             <!-- DELETE -->
+
             <button
               type="button"
               (click)="deleteProduct(product)"
-              class="flex-1 h-10 rounded-lg bg-red-600/90 hover:bg-red-500 text-white text-sm font-medium transition"
+              [disabled]="
+                deletingProductId === product.id
+              "
+              class="flex-1 rounded-lg border border-red-900 bg-red-950/30 px-3 py-2 text-sm text-red-400 hover:bg-red-900/40 disabled:opacity-50"
             >
-              Delete
+
+              {{
+                deletingProductId === product.id
+                  ? 'Deleting...'
+                  : 'Delete'
+              }}
+
             </button>
+
           </div>
 
-          <!-- USER VIEW ONLY -->
+
+          <!-- ================================================= -->
+          <!-- USER -->
+          <!-- ================================================= -->
+
           <div
             *ngIf="!isAdmin"
-            class="h-10 rounded-lg border border-slate-800 bg-slate-900 flex items-center justify-center text-sm text-slate-400"
+            class="mt-5 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2 text-center text-sm text-slate-500"
           >
             View only
           </div>
-        </div>
-      </article>
-    </section>
 
-    <!-- ======================================================= -->
+        </div>
+
+      </article>
+
+    </div>
+
+
+    <!-- =================================================== -->
     <!-- NO PRODUCTS -->
-    <!-- ======================================================= -->
+    <!-- =================================================== -->
 
     <div
-      *ngIf="!loading && filteredProducts.length === 0 && !errorMessage"
-      class="py-20 text-center"
+      *ngIf="
+        !loading &&
+        filteredProducts.length === 0
+      "
+      class="rounded-xl border border-slate-800 bg-slate-900/60 py-20 text-center"
     >
+
       <div
-        class="mx-auto w-16 h-16 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-center"
+        class="text-5xl text-slate-700"
       >
-        <svg
-          class="w-7 h-7 text-slate-600"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"
-          />
-        </svg>
+        ◈
       </div>
 
-      <h3 class="mt-4 text-lg font-semibold text-slate-300">No products found</h3>
 
-      <p class="mt-1 text-sm text-slate-500">Try changing your search or refresh the products.</p>
+      <h2
+        class="mt-4 text-xl font-semibold"
+      >
+        No products found
+      </h2>
+
+
+      <p
+        class="mt-2 text-sm text-slate-500"
+      >
+        There are no products matching your search.
+      </p>
+
+
+      <!-- ADMIN ONLY -->
+
+      <button
+        *ngIf="isAdmin"
+        type="button"
+        (click)="openCreateModal()"
+        class="mt-6 rounded-lg bg-violet-600 px-5 py-3 text-sm font-semibold hover:bg-violet-500"
+      >
+        + Create Product
+      </button>
+
     </div>
+
   </main>
 
-  <!-- ========================================================= -->
-  <!-- CREATE / EDIT PRODUCT MODAL -->
+
+  <!-- ===================================================== -->
+  <!-- CREATE / EDIT MODAL -->
   <!-- ADMIN ONLY -->
-  <!-- ========================================================= -->
+  <!-- ===================================================== -->
 
   <div
-    *ngIf="showProductModal && isAdmin"
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+    *ngIf="
+      showProductModal &&
+      isAdmin
+    "
+    class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4"
   >
-    <!-- MODAL -->
+
     <div
-      class="w-full max-w-md rounded-2xl border border-slate-700 bg-[#0f172a] shadow-2xl shadow-black/50"
+      class="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl"
     >
+
       <!-- MODAL HEADER -->
-      <div class="flex items-center justify-between px-6 py-5 border-b border-slate-800">
+
+      <div
+        class="flex items-center justify-between"
+      >
+
         <div>
-          <h2 class="text-lg font-semibold text-white">
-            {{ isEditMode ? 'Edit Product' : 'Create Product' }}
+
+          <h2
+            class="text-xl font-bold"
+          >
+            {{
+              editingProduct
+                ? 'Edit Product'
+                : 'Create Product'
+            }}
           </h2>
 
-          <p class="mt-1 text-sm text-slate-500">
+
+          <p
+            class="mt-1 text-sm text-slate-400"
+          >
+
             {{
-              isEditMode ? 'Update the product information.' : 'Add a new product to the database.'
+              editingProduct
+                ? 'Update the product information.'
+                : 'Add a new product to your database.'
             }}
+
           </p>
+
         </div>
 
+
         <!-- CLOSE -->
+
         <button
           type="button"
           (click)="closeProductModal()"
-          class="w-9 h-9 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition"
+          class="rounded-lg p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
         >
-          ×
+          ✕
         </button>
+
       </div>
 
-      <!-- MODAL BODY -->
-      <div class="p-6">
+
+      <!-- MODAL ERROR -->
+
+      <div
+        *ngIf="errorMessage"
+        class="mt-5 rounded-lg border border-red-900 bg-red-950/40 p-3 text-sm text-red-400"
+      >
+        {{ errorMessage }}
+      </div>
+
+
+      <!-- FORM -->
+
+      <form
+        class="mt-6 space-y-5"
+        (ngSubmit)="saveProduct()"
+      >
+
         <!-- NAME -->
-        <div class="mb-5">
-          <label class="block mb-2 text-sm font-medium text-slate-300"> Product Name </label>
+
+        <div>
+
+          <label
+            class="mb-2 block text-sm font-medium text-slate-300"
+          >
+            Product Name
+          </label>
 
           <input
             type="text"
+            name="productName"
             [(ngModel)]="productForm.name"
             placeholder="Enter product name"
-            class="w-full h-11 rounded-xl border border-slate-700 bg-[#020617] px-4 text-sm text-white placeholder:text-slate-600 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
+            class="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-500"
           />
+
         </div>
 
+
         <!-- PRICE -->
-        <div class="mb-6">
-          <label class="block mb-2 text-sm font-medium text-slate-300"> Price </label>
+
+        <div>
+
+          <label
+            class="mb-2 block text-sm font-medium text-slate-300"
+          >
+            Price
+          </label>
 
           <input
             type="number"
+            name="productPrice"
             [(ngModel)]="productForm.price"
             min="0"
             step="0.01"
-            placeholder="Enter product price"
-            class="w-full h-11 rounded-xl border border-slate-700 bg-[#020617] px-4 text-sm text-white placeholder:text-slate-600 outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
+            placeholder="Enter price"
+            class="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-violet-500"
           />
+
         </div>
 
-        <!-- MODAL ERROR -->
-        <div
-          *ngIf="errorMessage"
-          class="mb-5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
-        >
-          {{ errorMessage }}
-        </div>
 
         <!-- BUTTONS -->
-        <div class="flex gap-3">
+
+        <div
+          class="flex gap-3 pt-2"
+        >
+
           <!-- CANCEL -->
+
           <button
             type="button"
             (click)="closeProductModal()"
-            class="flex-1 h-11 rounded-xl border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-300 transition"
+            [disabled]="savingProduct"
+            class="flex-1 rounded-lg border border-slate-700 px-4 py-3 text-sm font-medium text-slate-300 hover:bg-slate-800 disabled:opacity-50"
           >
             Cancel
           </button>
 
-          <!-- SAVE -->
-          <button
-            type="button"
-            (click)="saveProduct()"
-            [disabled]="loading"
-            class="flex-1 h-11 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium transition"
-          >
-            <span *ngIf="!loading">
-              {{ isEditMode ? 'Update Product' : 'Create Product' }}
-            </span>
 
-            <span *ngIf="loading"> Saving... </span>
+          <!-- SAVE -->
+
+          <button
+            type="submit"
+            [disabled]="savingProduct"
+            class="flex-1 rounded-lg bg-violet-600 px-4 py-3 text-sm font-semibold hover:bg-violet-500 disabled:opacity-50"
+          >
+
+            {{
+              savingProduct
+                ? 'Saving...'
+                : editingProduct
+                  ? 'Update Product'
+                  : 'Create Product'
+            }}
+
           </button>
+
         </div>
-      </div>
+
+      </form>
+
     </div>
+
   </div>
+
 </div>
-```

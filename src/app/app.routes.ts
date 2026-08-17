@@ -1,12 +1,21 @@
-import { Routes } from '@angular/router';
+import {
+  Routes
+} from '@angular/router';
 
-import { Auth } from './auth/auth';
+import {
+  Auth
+} from './auth/auth';
 
-import { Products } from './products/products';
+import {
+  Products
+} from './products/products';
 
-import { authGuard } from './auth/auth.guard';
+import {
+  authGuard
+} from './auth/auth.guard';
 
 export const routes: Routes = [
+
   // =========================================================
   // LOGIN / REGISTER
   // =========================================================
@@ -14,8 +23,9 @@ export const routes: Routes = [
   {
     path: '',
 
-    component: Auth,
+    component: Auth
   },
+
 
   // =========================================================
   // PRODUCTS
@@ -26,8 +36,11 @@ export const routes: Routes = [
 
     component: Products,
 
-    canActivate: [authGuard],
+    canActivate: [
+      authGuard
+    ]
   },
+
 
   // =========================================================
   // UNKNOWN ROUTE
@@ -36,6 +49,7 @@ export const routes: Routes = [
   {
     path: '**',
 
-    redirectTo: '',
-  },
+    redirectTo: ''
+  }
+
 ];

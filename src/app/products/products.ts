@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { finalize } from 'rxjs';
 
 import { ProductService } from './product.servie';
 import { Product } from './products.model';
@@ -10,258 +11,203 @@ import { AuthService } from '../auth/auth.serv';
 @Component({
   selector: 'app-products',
   standalone: true,
-
-  imports: [
-    CommonModule,
-    FormsModule
-  ],
-
-  templateUrl: './products.html'
+  imports: [CommonModule, FormsModule],
+  templateUrl: './products.html',
 })
 export class Products implements OnInit {
-
-  // ==========================================
+  // =========================================================
   // PRODUCTS
-  // ==========================================
+  // =========================================================
 
   products: Product[] = [];
 
-  searchTerm: string = '';
+  searchTerm = '';
 
-  // ==========================================
+  // =========================================================
   // UI STATE
-  // ==========================================
+  // =========================================================
 
-  loading: boolean = false;
+  loading = false;
 
-  errorMessage: string = '';
+  errorMessage = '';
 
-  successMessage: string = '';
+  successMessage = '';
 
-  // ==========================================
+  // =========================================================
   // ROLE
-  // ==========================================
+  // =========================================================
 
-  isAdmin: boolean = false;
+  currentRole: string = 'User';
 
-  isUser: boolean = false;
+  isAdmin = false;
 
-  currentRole: string | null = null;
+  isUser = false;
 
-  // ==========================================
+  // =========================================================
   // MODAL
-  // ==========================================
+  // =========================================================
 
-  showProductModal: boolean = false;
+  showProductModal = false;
 
-  isEditMode: boolean = false;
+  editingProduct = false;
 
-  // ==========================================
-  // PRODUCT FORM
-  // ==========================================
+  savingProduct = false;
 
-  productForm = {
+  deletingProductId: number | null = null;
+
+  // =========================================================
+  // FORM
+  // =========================================================
+
+  productForm: Product = {
     id: 0,
     name: '',
-    price: 0
+    price: 0,
   };
+
+  // =========================================================
+  // CONSTRUCTOR
+  // =========================================================
 
   constructor(
     private productService: ProductService,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
   ) {}
 
-  // ==========================================
+  // =========================================================
   // INIT
-  // ==========================================
+  // =========================================================
 
   ngOnInit(): void {
-
-    // Get the current role from JWT.
-    this.currentRole =
-      this.authService.getRole();
-
-    this.isAdmin =
-      this.authService.isAdmin();
-
-    this.isUser =
-      this.authService.isUser();
-
-    // ========================================
-    // IMPORTANT:
-    // Load products immediately.
-    // ========================================
+    this.updateRole();
 
     this.loadProducts();
-
   }
 
-  // ==========================================
+  // =========================================================
+  // ROLE
+  // =========================================================
+
+  private updateRole(): void {
+    const role = this.authService.getRole();
+
+    this.currentRole = role || 'User';
+
+    this.isAdmin = this.authService.isAdmin();
+
+    this.isUser = this.authService.isUser();
+  }
+
+  // =========================================================
   // LOAD PRODUCTS
-  // ==========================================
+  // =========================================================
 
   loadProducts(): void {
-
     this.loading = true;
 
     this.errorMessage = '';
 
     this.productService
-      .getProducts(this.searchTerm)
-      .subscribe({
-
-        // ====================================
-        // SUCCESS
-        // ====================================
-
-        next: (data: Product[]) => {
-
-          console.log('Products loaded:', data.length);
-
-          this.products = data;
-
+      .getProducts()
+      .pipe(
+        finalize(() => {
           this.loading = false;
-
+        }),
+      )
+      .subscribe({
+        next: (data: Product[]) => {
+          /*
+           * IMPORTANT:
+           * Put the products into the component first.
+           *
+           * The HTML will render based on products.length,
+           * not only on loading.
+           */
+          this.products = Array.isArray(data) ? [...data] : [];
         },
 
-        // ====================================
-        // ERROR
-        // ====================================
-
         error: (error) => {
-
-          console.error(
-            'Failed to load products.',
-            error
-          );
-
           this.products = [];
 
-          this.loading = false;
-
-          // -------------------------------
-          // Unauthorized
-          // -------------------------------
-
-          if (error.status === 401) {
-
+          if (error?.status === 401) {
             this.errorMessage =
               'Your session has expired. Please login again.';
 
             this.authService.logout();
 
-            this.router.navigate(['/']);
+            this.router.navigate(['/'], {
+              replaceUrl: true,
+            });
 
             return;
           }
 
-          // -------------------------------
-          // Forbidden
-          // -------------------------------
-
-          if (error.status === 403) {
-
+          if (error?.status === 403) {
             this.errorMessage =
               'You are not authorized to access the products.';
 
             return;
           }
 
-          // -------------------------------
-          // Other errors
-          // -------------------------------
-
           this.errorMessage =
             'Unable to load products. Please make sure the backend server is running.';
-
-        }
-
+        },
       });
-
   }
 
-  // ==========================================
+  // =========================================================
   // SEARCH
-  // ==========================================
+  // =========================================================
 
   searchProducts(): void {
-
-    this.loadProducts();
-
+    /*
+     * Search locally.
+     *
+     * This prevents sending a request for every character
+     * typed into the search box.
+     */
   }
 
-  // ==========================================
+  // =========================================================
   // CLEAR SEARCH
-  // ==========================================
+  // =========================================================
 
   clearSearch(): void {
-
     this.searchTerm = '';
-
-    this.loadProducts();
-
   }
 
-  // ==========================================
-  // REFRESH
-  // ==========================================
-
-  refreshProducts(): void {
-
-    this.loadProducts();
-
-  }
-
-  // ==========================================
+  // =========================================================
   // FILTERED PRODUCTS
-  // ==========================================
+  // =========================================================
 
   get filteredProducts(): Product[] {
+    const search = this.searchTerm.trim().toLowerCase();
 
-    if (!this.searchTerm.trim()) {
-
+    if (!search) {
       return this.products;
-
     }
 
-    const search =
-      this.searchTerm
-        .toLowerCase()
-        .trim();
-
-    return this.products.filter(
-      product =>
-        product.name
-          .toLowerCase()
-          .includes(search)
+    return this.products.filter((product) =>
+      product.name.toLowerCase().includes(search),
     );
-
   }
 
-  // ==========================================
+  // =========================================================
   // OPEN CREATE MODAL
-  // ==========================================
+  // =========================================================
 
   openCreateModal(): void {
-
-    // User cannot create products.
     if (!this.isAdmin) {
-
       return;
-
     }
 
-    this.isEditMode = false;
+    this.editingProduct = false;
 
     this.productForm = {
-
       id: 0,
-
       name: '',
-
-      price: 0
-
+      price: 0,
     };
 
     this.errorMessage = '';
@@ -269,32 +215,23 @@ export class Products implements OnInit {
     this.successMessage = '';
 
     this.showProductModal = true;
-
   }
 
-  // ==========================================
+  // =========================================================
   // OPEN EDIT MODAL
-  // ==========================================
+  // =========================================================
 
   openEditModal(product: Product): void {
-
-    // User cannot edit products.
     if (!this.isAdmin) {
-
       return;
-
     }
 
-    this.isEditMode = true;
+    this.editingProduct = true;
 
     this.productForm = {
-
       id: product.id,
-
       name: product.name,
-
-      price: product.price
-
+      price: product.price,
     };
 
     this.errorMessage = '';
@@ -302,181 +239,145 @@ export class Products implements OnInit {
     this.successMessage = '';
 
     this.showProductModal = true;
-
   }
 
-  // ==========================================
+  // =========================================================
   // CLOSE MODAL
-  // ==========================================
+  // =========================================================
 
   closeProductModal(): void {
+    if (this.savingProduct) {
+      return;
+    }
 
     this.showProductModal = false;
 
     this.errorMessage = '';
-
   }
 
-  // ==========================================
+  // =========================================================
   // SAVE PRODUCT
-  // ==========================================
+  // =========================================================
 
   saveProduct(): void {
-
-    // Only Admin.
     if (!this.isAdmin) {
-
       return;
-
     }
 
     this.errorMessage = '';
 
     this.successMessage = '';
 
-    const name =
-      this.productForm.name.trim();
+    const name = this.productForm.name.trim();
 
-    const price =
-      Number(this.productForm.price);
+    const price = Number(this.productForm.price);
 
-    // ----------------------------------------
-    // Validation
-    // ----------------------------------------
+    // ---------------------------------------------------------
+    // VALIDATION
+    // ---------------------------------------------------------
 
     if (!name) {
-
-      this.errorMessage =
-        'Product name is required.';
-
+      this.errorMessage = 'Product name is required.';
       return;
-
     }
 
-    if (!Number.isFinite(price) || price <= 0) {
-
-      this.errorMessage =
-        'Product price must be greater than 0.';
-
+    if (!Number.isFinite(price) || price < 0) {
+      this.errorMessage = 'Please enter a valid price.';
       return;
-
     }
 
-    this.loading = true;
+    this.savingProduct = true;
 
-    // ========================================
-    // CREATE
-    // ========================================
+    // =========================================================
+    // UPDATE
+    // =========================================================
 
-    if (!this.isEditMode) {
+    if (this.editingProduct) {
+      const productToUpdate: Product = {
+        id: this.productForm.id,
+        name: name,
+        price: price,
+      };
 
       this.productService
-        .createProduct({
-
-          name: name,
-
-          price: price
-
-        })
+        .updateProduct(productToUpdate)
+        .pipe(
+          finalize(() => {
+            this.savingProduct = false;
+          }),
+        )
         .subscribe({
-
           next: () => {
-
-            this.loading = false;
-
             this.showProductModal = false;
 
             this.successMessage =
-              'Product created successfully.';
+              'Product updated successfully.';
 
             this.loadProducts();
-
           },
 
           error: (error) => {
-
-            this.loading = false;
-
             this.handleProductError(error);
-
-          }
-
+          },
         });
 
       return;
-
     }
 
-    // ========================================
-    // UPDATE
-    // ========================================
+    // =========================================================
+    // CREATE
+    // =========================================================
+
+    const newProduct: Omit<Product, 'id'> = {
+      name: name,
+      price: price,
+    };
 
     this.productService
-      .updateProduct({
-
-        id: this.productForm.id,
-
-        name: name,
-
-        price: price
-
-      })
+      .createProduct(newProduct)
+      .pipe(
+        finalize(() => {
+          this.savingProduct = false;
+        }),
+      )
       .subscribe({
-
         next: () => {
-
-          this.loading = false;
-
           this.showProductModal = false;
 
           this.successMessage =
-            'Product updated successfully.';
+            'Product created successfully.';
 
           this.loadProducts();
-
         },
 
         error: (error) => {
-
-          this.loading = false;
-
           this.handleProductError(error);
-
-        }
-
+        },
       });
-
   }
 
-  // ==========================================
+  // =========================================================
   // DELETE PRODUCT
-  // ==========================================
+  // =========================================================
 
   deleteProduct(product: Product): void {
-
-    // ========================================
-    // IMPORTANT:
-    // Normal users cannot delete.
-    // ========================================
-
+    /*
+     * Frontend protection:
+     * Normal users cannot delete.
+     */
     if (!this.isAdmin) {
-
       return;
-
     }
 
-    const confirmed =
-      window.confirm(
-        `Are you sure you want to delete "${product.name}"?`
-      );
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${product.name}"?`,
+    );
 
     if (!confirmed) {
-
       return;
-
     }
 
-    this.loading = true;
+    this.deletingProductId = product.id;
 
     this.errorMessage = '';
 
@@ -484,71 +385,60 @@ export class Products implements OnInit {
 
     this.productService
       .deleteProduct(product.id)
+      .pipe(
+        finalize(() => {
+          this.deletingProductId = null;
+        }),
+      )
       .subscribe({
-
         next: () => {
-
-          this.loading = false;
-
           this.successMessage =
             'Product deleted successfully.';
 
           this.loadProducts();
-
         },
 
         error: (error) => {
-
-          this.loading = false;
-
           this.handleProductError(error);
-
-        }
-
+        },
       });
-
   }
 
-  // ==========================================
-  // HANDLE PRODUCT ERROR
-  // ==========================================
+  // =========================================================
+  // HANDLE ERROR
+  // =========================================================
 
   private handleProductError(error: any): void {
-
-    if (error.status === 401) {
-
+    if (error?.status === 401) {
       this.authService.logout();
 
-      this.router.navigate(['/']);
+      this.router.navigate(['/'], {
+        replaceUrl: true,
+      });
 
       return;
-
     }
 
-    if (error.status === 403) {
-
+    if (error?.status === 403) {
       this.errorMessage =
         'You do not have permission to perform this action.';
 
       return;
-
     }
 
     this.errorMessage =
       'Something went wrong. Please try again.';
-
   }
 
-  // ==========================================
+  // =========================================================
   // LOGOUT
-  // ==========================================
+  // =========================================================
 
   logout(): void {
-
     this.authService.logout();
 
-    this.router.navigate(['/']);
-
+    this.router.navigate(['/'], {
+      replaceUrl: true,
+    });
   }
-
 }

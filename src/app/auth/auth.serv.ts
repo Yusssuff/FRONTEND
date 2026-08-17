@@ -6,29 +6,20 @@ import {
 
 import { isPlatformBrowser } from '@angular/common';
 
-import {
-  HttpClient
-} from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 
 import {
   Observable,
   tap
 } from 'rxjs';
 
-
 interface LoginResponse {
-
   token: string;
-
   expiration?: string;
-
 }
 
-
 interface JwtPayload {
-
   sub?: string;
-
   name?: string;
 
   role?: string | string[];
@@ -36,9 +27,7 @@ interface JwtPayload {
   exp?: number;
 
   [key: string]: any;
-
 }
-
 
 @Injectable({
   providedIn: 'root'
@@ -51,14 +40,12 @@ export class AuthService {
   private readonly tokenKey =
     'jwt_token';
 
-
   constructor(
     private http: HttpClient,
 
     @Inject(PLATFORM_ID)
     private platformId: Object
   ) {}
-
 
   // =========================================================
   // LOGIN
@@ -76,7 +63,7 @@ export class AuthService {
       )
       .pipe(
 
-        tap(response => {
+        tap((response) => {
 
           if (
             response &&
@@ -94,7 +81,6 @@ export class AuthService {
       );
 
   }
-
 
   // =========================================================
   // REGISTER
@@ -116,7 +102,6 @@ export class AuthService {
     );
 
   }
-
 
   // =========================================================
   // SAVE TOKEN
@@ -143,7 +128,6 @@ export class AuthService {
 
   }
 
-
   // =========================================================
   // GET TOKEN
   // =========================================================
@@ -166,7 +150,6 @@ export class AuthService {
 
   }
 
-
   // =========================================================
   // LOGOUT
   // =========================================================
@@ -188,7 +171,6 @@ export class AuthService {
     );
 
   }
-
 
   // =========================================================
   // CHECK LOGIN
@@ -216,9 +198,6 @@ export class AuthService {
 
     }
 
-
-    // Check JWT expiration.
-
     if (
       payload.exp &&
       payload.exp * 1000 <= Date.now()
@@ -234,14 +213,23 @@ export class AuthService {
 
   }
 
-
   // =========================================================
-  // GET JWT PAYLOAD
+  // DECODE JWT
   // =========================================================
 
   private decodeToken(
     token: string
   ): JwtPayload | null {
+
+    if (
+      !isPlatformBrowser(
+        this.platformId
+      )
+    ) {
+
+      return null;
+
+    }
 
     try {
 
@@ -256,7 +244,6 @@ export class AuthService {
 
       }
 
-
       const base64Url =
         parts[1];
 
@@ -265,11 +252,17 @@ export class AuthService {
           .replace(/-/g, '+')
           .replace(/_/g, '/');
 
+      const padded =
+        base64.padEnd(
+          base64.length +
+          (4 - base64.length % 4) % 4,
+          '='
+        );
 
       const jsonPayload =
         decodeURIComponent(
 
-          atob(base64)
+          atob(padded)
             .split('')
             .map(
               character =>
@@ -285,7 +278,6 @@ export class AuthService {
 
         );
 
-
       return JSON.parse(
         jsonPayload
       );
@@ -299,9 +291,8 @@ export class AuthService {
 
   }
 
-
   // =========================================================
-  // GET ROLE
+  // GET CURRENT ROLE
   // =========================================================
 
   getRole(): string | null {
@@ -315,7 +306,6 @@ export class AuthService {
 
     }
 
-
     const payload =
       this.decodeToken(token);
 
@@ -325,26 +315,32 @@ export class AuthService {
 
     }
 
+    /*
+     * ASP.NET Core Identity normally creates:
+     *
+     * http://schemas.microsoft.com/ws/2008/06/identity/claims/role
+     *
+     * We support that AND "role".
+     */
 
     const roleClaim =
       payload[
         'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
       ];
 
-
     const role =
       roleClaim ??
       payload.role;
 
-
-    if (Array.isArray(role)) {
+    if (
+      Array.isArray(role)
+    ) {
 
       return role.length > 0
-        ? role[0]
+        ? String(role[0])
         : null;
 
     }
-
 
     if (
       typeof role === 'string'
@@ -354,11 +350,9 @@ export class AuthService {
 
     }
 
-
     return null;
 
   }
-
 
   // =========================================================
   // IS ADMIN
@@ -366,13 +360,15 @@ export class AuthService {
 
   isAdmin(): boolean {
 
+    const role =
+      this.getRole();
+
     return (
-      this.getRole()?.toLowerCase()
+      role?.trim().toLowerCase()
       === 'admin'
     );
 
   }
-
 
   // =========================================================
   // IS USER
@@ -380,8 +376,11 @@ export class AuthService {
 
   isUser(): boolean {
 
+    const role =
+      this.getRole();
+
     return (
-      this.getRole()?.toLowerCase()
+      role?.trim().toLowerCase()
       === 'user'
     );
 
