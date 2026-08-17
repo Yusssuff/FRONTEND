@@ -1,10 +1,7 @@
 import { Component, Inject, PLATFORM_ID, OnInit } from '@angular/core';
-
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-
 import { AuthService } from './auth.serv';
 
 @Component({

@@ -65,9 +65,7 @@ export class Products implements OnInit {
     }, 0);
   }
 
-  // =========================================================
   // LOAD PRODUCTS
-  // =========================================================
 
   loadProducts(): void {
     this.loading = true;
@@ -121,17 +119,13 @@ export class Products implements OnInit {
       });
   }
 
-  // =========================================================
   // SEARCH
-  // =========================================================
 
   searchProducts(): void {
     this.loadProducts();
   }
 
-  // =========================================================
   // CLEAR SEARCH
-  // =========================================================
 
   clearSearch(): void {
     this.searchTerm = '';
@@ -139,9 +133,7 @@ export class Products implements OnInit {
     this.loadProducts();
   }
 
-  // =========================================================
   // OPEN CREATE MODAL
-  // =========================================================
 
   openCreateModal(): void {
     this.editingProduct = false;
