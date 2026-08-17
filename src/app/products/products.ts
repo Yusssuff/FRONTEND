@@ -1,4 +1,5 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, ChangeDetectorRef, afterNextRender } from '@angular/core';
+
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -10,12 +11,14 @@ import { AuthService } from '../auth/auth.serv';
 
 @Component({
   selector: 'app-products',
+
   standalone: true,
+
   imports: [CommonModule, FormsModule],
+
   templateUrl: './products.html',
 })
-export class Products implements OnInit {
-
+export class Products {
   // =========================================================
   // PRODUCTS
   // =========================================================
@@ -62,7 +65,9 @@ export class Products implements OnInit {
 
   productForm: Product = {
     id: 0,
+
     name: '',
+
     price: 0,
   };
 
@@ -72,35 +77,49 @@ export class Products implements OnInit {
 
   constructor(
     private productService: ProductService,
+
     private authService: AuthService,
-    private router: Router
-  ) {}
 
-  // =========================================================
-  // INIT
-  // =========================================================
+    private router: Router,
 
-  ngOnInit(): void {
-    this.updateRole();
+    private cdr: ChangeDetectorRef,
+  ) {
+    /*
+     * IMPORTANT
+     *
+     * Because this application uses Angular SSR,
+     * we wait until Angular has rendered the page
+     * in the browser before requesting products.
+     *
+     * afterNextRender MUST be registered from an
+     * injection context such as the constructor.
+     */
 
-    // Automatically load ALL products
-    // when the Products page opens.
-    this.loadProducts();
+    afterNextRender(() => {
+      this.initializeProductsPage();
+    });
   }
 
   // =========================================================
-  // ROLE
+  // INITIALIZE PRODUCTS PAGE
   // =========================================================
 
-  private updateRole(): void {
+  private initializeProductsPage(): void {
+    // -----------------------------------------
+    // GET CURRENT ROLE
+    // -----------------------------------------
 
-    const role = this.authService.getRole();
-
-    this.currentRole = role || 'User';
+    this.currentRole = this.authService.getRole() || 'User';
 
     this.isAdmin = this.authService.isAdmin();
 
     this.isUser = this.authService.isUser();
+
+    // -----------------------------------------
+    // LOAD ALL PRODUCTS
+    // -----------------------------------------
+
+    this.loadProducts();
   }
 
   // =========================================================
@@ -108,40 +127,86 @@ export class Products implements OnInit {
   // =========================================================
 
   loadProducts(): void {
-
     this.loading = true;
 
     this.errorMessage = '';
+
+    this.successMessage = '';
+
+    /*
+     * Tell Angular that loading started.
+     */
+
+    this.cdr.detectChanges();
+
+    /*
+     * IMPORTANT:
+     *
+     * Do NOT pass searchTerm here.
+     *
+     * This request retrieves ALL products.
+     *
+     * Searching is handled locally by
+     * filteredProducts.
+     */
 
     this.productService
       .getProducts()
       .pipe(
         finalize(() => {
           this.loading = false;
-        })
+
+          /*
+           * Force Angular to update the UI.
+           */
+
+          this.cdr.detectChanges();
+        }),
       )
       .subscribe({
+        // =====================================================
+        // SUCCESS
+        // =====================================================
 
         next: (data: Product[]) => {
+          /*
+           * Make sure we actually received an array.
+           */
 
-          this.products = Array.isArray(data)
-            ? [...data]
-            : [];
+          if (Array.isArray(data)) {
+            this.products = [...data];
+          } else {
+            this.products = [];
+          }
 
+          /*
+           * IMPORTANT:
+           *
+           * Update Angular immediately.
+           *
+           * This prevents the situation where:
+           *
+           * API -> products = 3
+           *
+           * but the HTML remains on the skeleton.
+           */
+
+          this.cdr.detectChanges();
         },
 
-        error: (error) => {
+        // =====================================================
+        // ERROR
+        // =====================================================
 
+        error: (error: any) => {
           this.products = [];
 
-          // -----------------------------------------
-          // UNAUTHORIZED
-          // -----------------------------------------
+          // -----------------------------------------------
+          // 401 - UNAUTHORIZED
+          // -----------------------------------------------
 
           if (error?.status === 401) {
-
-            this.errorMessage =
-              'Your session has expired. Please login again.';
+            this.errorMessage = 'Your session has expired. Please login again.';
 
             this.authService.logout();
 
@@ -149,27 +214,31 @@ export class Products implements OnInit {
               replaceUrl: true,
             });
 
+            this.cdr.detectChanges();
+
             return;
           }
 
-          // -----------------------------------------
-          // FORBIDDEN
-          // -----------------------------------------
+          // -----------------------------------------------
+          // 403 - FORBIDDEN
+          // -----------------------------------------------
 
           if (error?.status === 403) {
+            this.errorMessage = 'You are not authorized to access the products.';
 
-            this.errorMessage =
-              'You are not authorized to access the products.';
+            this.cdr.detectChanges();
 
             return;
           }
 
-          // -----------------------------------------
+          // -----------------------------------------------
           // OTHER ERROR
-          // -----------------------------------------
+          // -----------------------------------------------
 
           this.errorMessage =
             'Unable to load products. Please make sure the backend server is running.';
+
+          this.cdr.detectChanges();
         },
       });
   }
@@ -179,12 +248,17 @@ export class Products implements OnInit {
   // =========================================================
 
   searchProducts(): void {
+    /*
+     * We already have ALL products in memory.
+     *
+     * So we don't need another HTTP request
+     * every time the user types.
+     *
+     * filteredProducts automatically filters
+     * the products.
+     */
 
-    // Search is done locally.
-    //
-    // We DON'T call the backend here.
-    // filteredProducts automatically updates
-    // when searchTerm changes.
+    this.cdr.detectChanges();
   }
 
   // =========================================================
@@ -192,9 +266,9 @@ export class Products implements OnInit {
   // =========================================================
 
   clearSearch(): void {
-
     this.searchTerm = '';
 
+    this.cdr.detectChanges();
   }
 
   // =========================================================
@@ -202,32 +276,21 @@ export class Products implements OnInit {
   // =========================================================
 
   get filteredProducts(): Product[] {
-
-    const search =
-      this.searchTerm
-        .trim()
-        .toLowerCase();
+    const search = this.searchTerm.trim().toLowerCase();
 
     // -----------------------------------------
     // NO SEARCH
     // -----------------------------------------
 
     if (!search) {
-
       return this.products;
-
     }
 
     // -----------------------------------------
-    // SEARCH
+    // FILTER
     // -----------------------------------------
 
-    return this.products.filter(
-      (product: Product) =>
-        product.name
-          .toLowerCase()
-          .includes(search)
-    );
+    return this.products.filter((product: Product) => product.name.toLowerCase().includes(search));
   }
 
   // =========================================================
@@ -235,8 +298,10 @@ export class Products implements OnInit {
   // =========================================================
 
   openCreateModal(): void {
+    /*
+     * Only Admin can create.
+     */
 
-    // Normal User cannot create.
     if (!this.isAdmin) {
       return;
     }
@@ -245,7 +310,9 @@ export class Products implements OnInit {
 
     this.productForm = {
       id: 0,
+
       name: '',
+
       price: 0,
     };
 
@@ -254,6 +321,8 @@ export class Products implements OnInit {
     this.successMessage = '';
 
     this.showProductModal = true;
+
+    this.cdr.detectChanges();
   }
 
   // =========================================================
@@ -261,8 +330,10 @@ export class Products implements OnInit {
   // =========================================================
 
   openEditModal(product: Product): void {
+    /*
+     * Only Admin can edit.
+     */
 
-    // Normal User cannot edit.
     if (!this.isAdmin) {
       return;
     }
@@ -271,7 +342,9 @@ export class Products implements OnInit {
 
     this.productForm = {
       id: product.id,
+
       name: product.name,
+
       price: product.price,
     };
 
@@ -280,6 +353,8 @@ export class Products implements OnInit {
     this.successMessage = '';
 
     this.showProductModal = true;
+
+    this.cdr.detectChanges();
   }
 
   // =========================================================
@@ -287,8 +362,6 @@ export class Products implements OnInit {
   // =========================================================
 
   closeProductModal(): void {
-
-    // Don't close while saving.
     if (this.savingProduct) {
       return;
     }
@@ -296,6 +369,8 @@ export class Products implements OnInit {
     this.showProductModal = false;
 
     this.errorMessage = '';
+
+    this.cdr.detectChanges();
   }
 
   // =========================================================
@@ -303,8 +378,10 @@ export class Products implements OnInit {
   // =========================================================
 
   saveProduct(): void {
+    /*
+     * Only Admin can create/update.
+     */
 
-    // Only Admin can create/update.
     if (!this.isAdmin) {
       return;
     }
@@ -317,20 +394,16 @@ export class Products implements OnInit {
     // GET FORM VALUES
     // -----------------------------------------
 
-    const name =
-      this.productForm.name.trim();
+    const name = this.productForm.name.trim();
 
-    const price =
-      Number(this.productForm.price);
+    const price = Number(this.productForm.price);
 
     // -----------------------------------------
     // VALIDATE NAME
     // -----------------------------------------
 
     if (!name) {
-
-      this.errorMessage =
-        'Product name is required.';
+      this.errorMessage = 'Product name is required.';
 
       return;
     }
@@ -339,27 +412,20 @@ export class Products implements OnInit {
     // VALIDATE PRICE
     // -----------------------------------------
 
-    if (
-      !Number.isFinite(price) ||
-      price < 0
-    ) {
-
-      this.errorMessage =
-        'Please enter a valid price.';
+    if (!Number.isFinite(price) || price < 0) {
+      this.errorMessage = 'Please enter a valid price.';
 
       return;
     }
 
     this.savingProduct = true;
 
-    // =========================================================
-    // UPDATE PRODUCT
-    // =========================================================
+    // =====================================================
+    // UPDATE
+    // =====================================================
 
     if (this.editingProduct) {
-
       const productToUpdate: Product = {
-
         id: this.productForm.id,
 
         name: name,
@@ -368,70 +434,75 @@ export class Products implements OnInit {
       };
 
       this.productService
+
         .updateProduct(productToUpdate)
+
         .pipe(
           finalize(() => {
             this.savingProduct = false;
-          })
+
+            this.cdr.detectChanges();
+          }),
         )
+
         .subscribe({
-
           next: () => {
-
             this.showProductModal = false;
 
-            this.successMessage =
-              'Product updated successfully.';
+            this.successMessage = 'Product updated successfully.';
 
-            // Reload products after update.
+            /*
+             * Reload all products.
+             */
+
             this.loadProducts();
           },
 
-          error: (error) => {
-
+          error: (error: any) => {
             this.handleProductError(error);
-
           },
         });
 
       return;
     }
 
-    // =========================================================
-    // CREATE PRODUCT
-    // =========================================================
+    // =====================================================
+    // CREATE
+    // =====================================================
 
-    const newProduct: Omit<Product, 'id'> = {
-
+    const newProduct = {
       name: name,
 
       price: price,
     };
 
     this.productService
+
       .createProduct(newProduct)
+
       .pipe(
         finalize(() => {
           this.savingProduct = false;
-        })
+
+          this.cdr.detectChanges();
+        }),
       )
+
       .subscribe({
-
         next: () => {
-
           this.showProductModal = false;
 
-          this.successMessage =
-            'Product created successfully.';
+          this.successMessage = 'Product created successfully.';
 
-          // Reload products after creation.
+          /*
+           * Reload all products.
+           */
+
           this.loadProducts();
         },
 
-        error: (error) => {
-
+        error: (error: any) => {
           this.handleProductError(error);
-
         },
       });
   }
@@ -441,60 +512,53 @@ export class Products implements OnInit {
   // =========================================================
 
   deleteProduct(product: Product): void {
-
-    // =======================================================
-    // IMPORTANT
-    // =======================================================
-    //
-    // Normal User can NEVER delete from the UI.
-    //
-    // Backend authorization must ALSO protect DELETE.
-    // =======================================================
+    /*
+     * IMPORTANT:
+     *
+     * Normal User cannot delete.
+     */
 
     if (!this.isAdmin) {
       return;
     }
 
-    const confirmed =
-      window.confirm(
-        `Are you sure you want to delete "${product.name}"?`
-      );
+    const confirmed = window.confirm(`Are you sure you want to delete "${product.name}"?`);
 
     if (!confirmed) {
       return;
     }
 
-    this.deletingProductId =
-      product.id;
+    this.deletingProductId = product.id;
 
     this.errorMessage = '';
 
     this.successMessage = '';
 
     this.productService
+
       .deleteProduct(product.id)
+
       .pipe(
         finalize(() => {
-
           this.deletingProductId = null;
 
-        })
+          this.cdr.detectChanges();
+        }),
       )
+
       .subscribe({
-
         next: () => {
+          this.successMessage = 'Product deleted successfully.';
 
-          this.successMessage =
-            'Product deleted successfully.';
+          /*
+           * Reload products after deletion.
+           */
 
-          // Reload products after deletion.
           this.loadProducts();
         },
 
-        error: (error) => {
-
+        error: (error: any) => {
           this.handleProductError(error);
-
         },
       });
   }
@@ -504,13 +568,11 @@ export class Products implements OnInit {
   // =========================================================
 
   private handleProductError(error: any): void {
-
     // -----------------------------------------
     // 401
     // -----------------------------------------
 
     if (error?.status === 401) {
-
       this.authService.logout();
 
       this.router.navigate(['/'], {
@@ -525,19 +587,20 @@ export class Products implements OnInit {
     // -----------------------------------------
 
     if (error?.status === 403) {
+      this.errorMessage = 'You do not have permission to perform this action.';
 
-      this.errorMessage =
-        'You do not have permission to perform this action.';
+      this.cdr.detectChanges();
 
       return;
     }
 
     // -----------------------------------------
-    // OTHER ERROR
+    // OTHER
     // -----------------------------------------
 
-    this.errorMessage =
-      'Something went wrong. Please try again.';
+    this.errorMessage = 'Something went wrong. Please try again.';
+
+    this.cdr.detectChanges();
   }
 
   // =========================================================
@@ -545,7 +608,6 @@ export class Products implements OnInit {
   // =========================================================
 
   logout(): void {
-
     this.authService.logout();
 
     this.router.navigate(['/'], {
